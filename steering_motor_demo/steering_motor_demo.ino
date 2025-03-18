@@ -19,19 +19,9 @@ const float periodMs = 20.0;
 // default steering angle:
 int steeringAngle = 90; // start centered
 
-// Device Name (For Bluetooth):
+// Device Name (For Bluetooth)
 String deviceName = "ECE362CarTeam02";
 BluetoothSerial SerialBT //renaming BluetoothSerial to SerialBT for so it reads better
-
-// Check if Bluetooth is available  [Taken from SerialToSerialBT from Arduino Help]
-#if !defined(CONFIG_BT_ENABLED) || !defined(CONFIG_BLUEDROID_ENABLED)
-#error Bluetooth is not enabled! Please run `make menuconfig` to and enable it
-#endif
-
-// Check Serial Port Profile
-#if !defined(CONFIG_BT_SPP_ENABLED)
-#error Serial Port Profile for Bluetooth is not available or not enabled. It is only available for the ESP32 chip.
-#endif
 
 void setup() {
     Serial.begin(115200);
@@ -40,7 +30,7 @@ void setup() {
     Serial.printf("The device with name \"%s\" is started.\nNow you can pair it with 
     Bluetooth!\n", ECE362CarTeam02.c_str());
     
-    // INA219:
+    
     if (!ina219.begin()) {
         Serial.println("Failed to find INA219 chip");
         while (1);
@@ -88,15 +78,6 @@ void loop() {
     readINA219();
     delay(500);
 
-
-    //Bluetooth
-    if (Serial.available()) { //Checks for any data from Arduino IDE
-        SerialBT.write(Serial.read()); //If data, send it to the connected device
-    }
-    if (SerialBT.available()) { //Checks for any data from the connected device
-        Serial.write(SerialBT.read()); //If data, display in the serial monitor
-    }
-    delay(20);
 }
 
 void setSteeringAngle(int angle) {
