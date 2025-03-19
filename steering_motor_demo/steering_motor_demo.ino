@@ -1,9 +1,14 @@
 #include <Wire.h>
 #include <Adafruit_INA219.h>
 #include <BluetoothSerial.h>
+#include <HUSKYLENS.h>
 
 // INA219 instance
 Adafruit_INA219 ina219;
+
+// HUSKEYLENS instance
+HUSKYLENS huskylens;
+int left = 0; int right = 0;
 
 // ctes:
 const int steeringPin = 32;
@@ -11,6 +16,8 @@ const int speedMotorPin = 33;
 const int pwmFrequency = 50;
 const int pwmResolution = 12;
 const int pwmMax = 4095;
+const int I2CSDAPin = 21;
+const int I2CSCLPin = 22;
 
 const float minPulseWidth = 1.0;
 const float maxPulseWidth = 2.0;
@@ -49,6 +56,16 @@ void setup() {
         while (1);
     }
     Serial.println("INA219 Initialized");
+
+    // HuskyLens
+    while (!huskylens.begin(Wire))
+    {
+        Serial.println(F("Begin failed!"));
+        Serial.println(F("1.Please recheck the \"Protocol Type\" in HUSKYLENS (General Settings>>Protol Type>>I2C)"));
+        Serial.println(F("2.Please recheck the connection."));
+        delay(100);
+    }
+    huskylens.writeAlgorithm(ALGORITHM_LINE_TRACKING); //Switch the algorithm to line tracking.
     
     // steering:
     ledcAttach(steeringPin, pwmFrequency, pwmResolution);
@@ -86,12 +103,45 @@ void loop() {
         delay(500);
     }
     */
-    setMotorSpeed(0);
-    setSteeringAngle(90);
-    // readINA219();
-    delay(500);
-
     bluetoothSerialCommunication();
+    huskeyLensLineFollowing();
+
+    setMotorSpeed(120);
+    delay(1000);
+    setMotorSpeed(60);
+    delay(1000);
+    setMotorSpeed(0);
+
+    setSteeringAngle(20);
+    delay(1000);
+    setSteeringAngle(160);
+    delay(1000);
+    setSteeringAngle(90);
+
+    readINA219();
+    delay(1000);
+}
+
+void huskeyLensLineFollowing() {
+    if (!huskylens.request(1)) {Serial.println(F("Fail to request data from HUSKYLENS, recheck the connection!"));left = 0; right = 0;}
+    else if(!huskylens.isLearned()) {Serial.println(F("Nothing learned, press learn button on HUSKYLENS to learn one!"));left = 0; right = 0;}
+    else if(!huskylens.available()) Serial.println(F("No block or arrow appears on the screen!"));
+    else {
+        HUSKYLENSResult result = huskylens.read();
+        printHuskeyResult(result);
+    }
+}
+
+void printHuskeyResult(HUSKYLENSResult result){
+    if (result.command == COMMAND_RETURN_BLOCK){
+        Serial.println(String()+F("Block:xCenter=")+result.xCenter+F(",yCenter=")+result.yCenter+F(",width=")+result.width+F(",height=")+result.height+F(",ID=")+result.ID);
+    }
+    else if (result.command == COMMAND_RETURN_ARROW){
+        Serial.println(String()+F("Arrow:xOrigin=")+result.xOrigin+F(",yOrigin=")+result.yOrigin+F(",xTarget=")+result.xTarget+F(",yTarget=")+result.yTarget+F(",ID=")+result.ID);
+    }
+    else{
+        Serial.println("Object unknown!");
+    }
 }
 
 void bluetoothSerialCommunication() {
