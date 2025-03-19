@@ -19,18 +19,31 @@ const float periodMs = 20.0;
 // default steering angle:
 int steeringAngle = 90; // start centered
 
-// Device Name (For Bluetooth)
+// Device Name (For Bluetooth):
 String deviceName = "ECE362CarTeam02";
-BluetoothSerial SerialBT //renaming BluetoothSerial to SerialBT for so it reads better
+BluetoothSerial SerialBT; //renaming BluetoothSerial to SerialBT for so it reads better
+
+// Check if Bluetooth is available
+#if !defined(CONFIG_BT_ENABLED) || !defined(CONFIG_BLUEDROID_ENABLED)
+#error Bluetooth is not enabled! Please run `make menuconfig` to and enable it
+#endif
+
+// Check Serial Port Profile
+#if !defined(CONFIG_BT_SPP_ENABLED)
+#error Serial Port Profile for Bluetooth is not available or not enabled. It is only available for the ESP32 chip.
+#endif
+
+//Misc debugging values. Not important to code
+int testingNumber = 0;
+char str[50];
 
 void setup() {
     Serial.begin(115200);
     Wire.begin(); //For I2C communication
-    SerialBT.begin(ECE362CarTeam02);
-    Serial.printf("The device with name \"%s\" is started.\nNow you can pair it with 
-    Bluetooth!\n", ECE362CarTeam02.c_str());
+    SerialBT.begin(deviceName); //Start SerialBT
+    Serial.printf("The device with name \"%s\" is started.\nNow you can pair it with Bluetooth!\n", deviceName.c_str());
     
-    
+    // INA219:
     if (!ina219.begin()) {
         Serial.println("Failed to find INA219 chip");
         while (1);
@@ -73,11 +86,44 @@ void loop() {
         delay(500);
     }
     */
-    setMotorSpeed(120);
-    setSteeringAngle(160);
-    readINA219();
+    setMotorSpeed(0);
+    setSteeringAngle(90);
+    // readINA219();
     delay(500);
 
+    bluetoothSerialCommunication();
+}
+
+void bluetoothSerialCommunication() {
+
+    /*
+    SerialBT.read:  Read a single byte from SerialBT
+    SerialBT.write: Write a single byte to connection 
+
+    SerialBT is Tera Term
+    Serial is Serial Monitor       
+    */
+
+    //Bluetooth
+    if (Serial.available()) { //Checks for any data from Arduino IDE: Computer --> Car
+        SerialBT.write(Serial.read()); //If data, send it to the connected device
+
+        //Debugging Code
+        // Serial.println("Computer --> Car | Serial");
+        // SerialBT.println("Computer --> Car | BT");
+    }
+    if (SerialBT.available()) { //Checks for any data from the connected device: Car --> Computer
+        Serial.write(SerialBT.read()); //If data, display in the serial monitor
+        
+        //Debugging Code
+        // Serial.println("Car --> Computer | Serial");
+        // SerialBT.println("Car --> Computer | BT");
+    }
+
+    //Debugging Code (Prints a number continuously so you know the serial is working)
+    // Serial.println(testingNumber);
+    // SerialBT.println("From SerialBT3");
+    // testingNumber++;
 }
 
 void setSteeringAngle(int angle) {
