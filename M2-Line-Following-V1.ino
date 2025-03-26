@@ -69,6 +69,7 @@ void setup() {
     }
     Serial.println("INA219 Initialized");
     
+    // HUSKYLENS Initilization
     while (!huskylens.begin(Wire))
     {
         Serial.println(F("Begin failed!"));
@@ -92,22 +93,20 @@ void setup() {
 }
 
 void loop() {
-    
-    //int32_t error;
-    
+
     huskylens.request(ID1);
     HUSKYLENSResult result = huskylens.read();
     printResult(result);
 
     // Calculate the error:
-    int error = (int32_t)result.xTarget - (int32_t)160;
+    int error = (int32_t)result.xTarget - (int32_t)160; // 160 is the center of the frame (320x320)
     Serial.println(error);
     Serial.println("\n");
-    if(abs(error) > 40) {
-      motorSpeed = 50;
+    if(abs(error) > 40) { //lower the number, the closer it will follow the line
+      motorSpeed = 50; 
       setMotorSpeed(motorSpeed);
     } else {
-      setMotorSpeed(motorSpeed+10);
+      setMotorSpeed(motorSpeed+20);
     }
     
 
