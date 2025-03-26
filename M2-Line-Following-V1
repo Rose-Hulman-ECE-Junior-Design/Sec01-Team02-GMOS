@@ -51,7 +51,7 @@ BluetoothSerial SerialBT; //renaming BluetoothSerial to SerialBT for so it reads
 #error Serial Port Profile for Bluetooth is not available or not enabled. It is only available for the ESP32 chip.
 #endif
 
-//Misc debugging values. Not important to code
+//Misc debugging values for BT. Not important for functionality 
 int testingNumber = 0;
 char str[50];
 //***************************** End Bluetooth Init
