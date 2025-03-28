@@ -32,7 +32,7 @@ int setpoint = 160;  // Center line position
 int output = 0;
 
 // PID Constants
-const float kp = 0.8, ki = 0.0, kd = 0.000; //kp = 0.60, ki = 0.1, kd = 0.002;
+const float kp = 0.75, ki = 0.1, kd = 0.000; //kp = 0.60, ki = 0.1, kd = 0.002;
 const float hz = 50.0;
 FastPID pid(kp, ki, kd, hz, 8, true);
 
@@ -109,7 +109,7 @@ void loop() {
     }
 
     output = pid.step(setpoint, result.xTarget); //output of the PID controller
-    setSteeringAngle(steeringAngle + output*10); //steeringAngle + output
+    setSteeringAngle(steeringAngle + output); //steeringAngle + output
     // setSteeringAngle(180);
     // delay(1000);
     // setSteeringAngle(0);
