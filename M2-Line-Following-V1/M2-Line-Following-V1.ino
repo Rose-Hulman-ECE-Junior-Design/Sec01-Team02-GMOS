@@ -32,7 +32,7 @@ int setpoint = 160;  // Center line position
 int output = 0;
 
 // PID Constants
-const float kp = 0.75, ki = 0.1, kd = 0.000; //kp = 0.60, ki = 0.1, kd = 0.002;
+const float kp = 0.5, ki = 0.9, kd = 0.0; //kp = 0.70, ki = 0.1, kd = 0.002
 const float hz = 50.0;
 FastPID pid(kp, ki, kd, hz, 8, true);
 
@@ -89,7 +89,7 @@ void setup() {
     delay(1000); // at least 1s delay to allow driver to recognize servo attachment
     setMotorSpeed(motorSpeed); // the driver needs to first see 0-speed in order to calibrate
     delay(3000); // this delay may need to be up to 5s (5000ms) for the driver to calibrate to 0-speed
-    motorSpeed = 51; // set a default motor speed
+    // motorSpeed = 50; // set a default motor speed
 }
 
 void loop() {
@@ -99,16 +99,16 @@ void loop() {
 
     // Calculate the error:
     int error = (int32_t)result.xTarget - (int32_t)160; // 160 is the center of the frame (320x320)
-    // Serial.println(error);
-    // Serial.println("\n");
 
-    if(abs(error) > 40) { //lower the number, the closer it will follow the line
-      setMotorSpeed(motorSpeed); //set motor speed to a lower value while turning
-    } else {
-      setMotorSpeed(motorSpeed+20); //set motor speed to a higher value on the straights
-    }
+    // if(abs(error) > 40) { //Turning
+    //   setMotorSpeed(motorSpeed); //set motor speed to a lower value while turning
+    //   output = pid.step(setpoint, result.xTarget); //output of the PID controller
+    // } else { //Not Turning (straight)
+    //   setMotorSpeed(motorSpeed+20); //set motor speed to a higher value on the straights
+    //   output = pid.step(setpoint, result.xCenter); //output of the PID controller
+    // }
 
-    output = pid.step(setpoint, result.xTarget); //output of the PID controller
+    output = pid.step(setpoint, result.xTarget);
     setSteeringAngle(steeringAngle + output); //steeringAngle + output
     // setSteeringAngle(180);
     // delay(1000);
@@ -152,7 +152,7 @@ void bluetoothSerialCommunication() {
 }
 
 void setSteeringAngle(int angle) { //Could try LEDCWRITE instead of sall this John
-    angle = constrain(angle, 5, 180);
+    angle = constrain(angle, 0, 180);
     float rangeMs = maxPulseWidth - minPulseWidth;
     float pulseWidthMs = minPulseWidth + ((float)angle / 180.0) * rangeMs;
     int dutyCycle = (int)(pwmMax * (pulseWidthMs / periodMs));
