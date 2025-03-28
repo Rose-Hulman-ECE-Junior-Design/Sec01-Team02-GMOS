@@ -18,7 +18,7 @@ const float maxPulseWidth = 2.0;
 const float periodMs = 20.0;
 
 // default steering angle:
-int steeringAngle = 90; // start centered
+int centerSteeringAngle = 90; // start centered
 int motorSpeed = 0; // start centered
 
 HUSKYLENS huskylens;
@@ -31,7 +31,7 @@ int setpoint = 160;  // Center line position
 int output = 0;
 
 // PID Constants
-const float kp = 0.75, ki = 0.2, kd = 0.002;
+const float kp = 0.75, ki = 0.0, kd = 0.000;
 const float hz = 50.0;
 FastPID pid(kp, ki, kd, hz, 8, true);
 
@@ -57,7 +57,7 @@ void setup() {
 
     // steering:
     ledcAttach(steeringPin, pwmFrequency, pwmResolution);
-    setSteeringAngle(steeringAngle);
+    setSteeringAngle(centerSteeringAngle);
 
     // motor:
     ledcAttach(speedMotorPin, pwmFrequency, pwmResolution);
@@ -70,6 +70,7 @@ void setup() {
 void loop() {
     
     //int32_t error;
+    motorSpeed = 45;
     
     huskylens.request(ID1);
     HUSKYLENSResult result = huskylens.read();
@@ -87,15 +88,14 @@ void loop() {
     }
     
 
-    output = pid.step(setpoint, result.xCenter);
-    setSteeringAngle(steeringAngle+output*1.5);
+    output = pid.step(setpoint, result.xTarget);
+    delay(10);
+    setSteeringAngle(160); //centerSteeringAngle+output*1.5
     //delay(10);
-
-    
 }
 
 void setSteeringAngle(int angle) {
-    angle = constrain(angle, 10, 170);
+    angle = constrain(angle, 20, 160);
     float rangeMs = maxPulseWidth - minPulseWidth;
     float pulseWidthMs = minPulseWidth + ((float)angle / 180.0) * rangeMs;
     int dutyCycle = (int)(pwmMax * (pulseWidthMs / periodMs));

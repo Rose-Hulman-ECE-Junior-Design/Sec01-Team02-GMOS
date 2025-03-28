@@ -14,8 +14,8 @@ const int pwmFrequency = 50;
 const int pwmResolution = 12;
 const int pwmMax = 4095;
 
-const float minPulseWidth = 1.0;
-const float maxPulseWidth = 2.0;
+const float minPulseWidth = 1.0; // 1ms pulse width for 0 degrees
+const float maxPulseWidth = 2.0; // 2ms pulse width for 180 degrees
 const float periodMs = 20.0;
 
 // default steering angle:
@@ -32,11 +32,11 @@ int setpoint = 160;  // Center line position
 int output = 0;
 
 // PID Constants
-const float kp = 0.75, ki = 0.2, kd = 0.002;
+const float kp = 0.8, ki = 0.0, kd = 0.000; //kp = 0.60, ki = 0.1, kd = 0.002;
 const float hz = 50.0;
 FastPID pid(kp, ki, kd, hz, 8, true);
 
-//***************************** Begin Bluetooth Init
+//***************************** Begin Bluetooth Config
 // Device Name (For Bluetooth):
 String deviceName = "ECE362CarTeam02";
 BluetoothSerial SerialBT; //renaming BluetoothSerial to SerialBT for so it reads better
@@ -54,7 +54,7 @@ BluetoothSerial SerialBT; //renaming BluetoothSerial to SerialBT for so it reads
 //Misc debugging values for BT. Not important for functionality 
 int testingNumber = 0;
 char str[50];
-//***************************** End Bluetooth Init
+//***************************** End Bluetooth Config
 
 void setup() {
     Serial.begin(115200);
@@ -73,41 +73,51 @@ void setup() {
     while (!huskylens.begin(Wire))
     {
         Serial.println(F("Begin failed!"));
-}
+        Serial.println(F("1.Please recheck the \"Protocol Type\" in HUSKYLENS (General Settings>>Protol Type>>I2C)"));
+        Serial.println(F("2.Please recheck the connection."));
+        delay(100);
+    }
+    Serial.println(F("HUSKYLENS Initialized"));
+    huskylens.writeAlgorithm(ALGORITHM_LINE_TRACKING); //Switch the algorithm to line tracking.
+
+    // steering:
+    ledcAttach(steeringPin, pwmFrequency, pwmResolution);
+    setSteeringAngle(steeringAngle);
+
+    // motor:
+    ledcAttach(speedMotorPin, pwmFrequency, pwmResolution);
+    delay(1000); // at least 1s delay to allow driver to recognize servo attachment
+    setMotorSpeed(motorSpeed); // the driver needs to first see 0-speed in order to calibrate
+    delay(3000); // this delay may need to be up to 5s (5000ms) for the driver to calibrate to 0-speed
+    motorSpeed = 51; // set a default motor speed
 }
 
 void loop() {
-    
-    //int32_t error;
-    
-
     huskylens.request(ID1);
     HUSKYLENSResult result = huskylens.read();
-    printResult(result);
+    // printResult(result);
 
     // Calculate the error:
     int error = (int32_t)result.xTarget - (int32_t)160; // 160 is the center of the frame (320x320)
-    Serial.println(error);
-    Serial.println("\n");
-    if(abs(error) > 40) {
-      motorSpeed = 50;
-    }
+    // Serial.println(error);
+    // Serial.println("\n");
+
     if(abs(error) > 40) { //lower the number, the closer it will follow the line
-      motorSpeed = 50; 
-      setMotorSpeed(motorSpeed);
+      setMotorSpeed(motorSpeed); //set motor speed to a lower value while turning
     } else {
-      setMotorSpeed(motorSpeed+10);
-      setMotorSpeed(motorSpeed+20);
+      setMotorSpeed(motorSpeed+20); //set motor speed to a higher value on the straights
     }
-    
 
-    output = pid.step(setpoint, result.xCenter);
-    setSteeringAngle(steeringAngle+output*1.5);
-    //delay(10);
+    output = pid.step(setpoint, result.xTarget); //output of the PID controller
+    setSteeringAngle(steeringAngle + output*10); //steeringAngle + output
+    // setSteeringAngle(180);
+    // delay(1000);
+    // setSteeringAngle(0);
+    // delay(1000);
 
-    bluetoothSerialCommunication();
+
+    // bluetoothSerialCommunication();
 }
-
 
 void bluetoothSerialCommunication() {
 
@@ -141,8 +151,8 @@ void bluetoothSerialCommunication() {
     // testingNumber++;
 }
 
-void setSteeringAngle(int angle) {
-    angle = constrain(angle, 10, 170);
+void setSteeringAngle(int angle) { //Could try LEDCWRITE instead of sall this John
+    angle = constrain(angle, 5, 180);
     float rangeMs = maxPulseWidth - minPulseWidth;
     float pulseWidthMs = minPulseWidth + ((float)angle / 180.0) * rangeMs;
     int dutyCycle = (int)(pwmMax * (pulseWidthMs / periodMs));
