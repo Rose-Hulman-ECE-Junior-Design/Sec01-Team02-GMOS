@@ -32,7 +32,10 @@
 - The purpose of the <ins>Ohm</ins>igos robot and its relationship to ECE technology.
   - Overview of how the competition integrates electrical and computer engineering concepts like sensor data acquisition, motor control, and communication protocols.
   - Brief description of how the robot demonstrates core ECE skills, like embedded systems, power management, communication interfaces.
-      - test
+      - power tracking
+      - circuits
+      - object oriented code
+      - etc
 
 ### UI User Manual
 - **Bluetooth Control**:
@@ -65,8 +68,9 @@
     - Function to set servo angle (parameters and usage).
   - **Power Monitoring**:
     - Functions to retrieve voltage, current, and power draw.
+         - Will most likely be parsing the incoming BT message for the data we want (from the robot), then accumulating the total power consumed as well as total power recharged (can differentiate via state of robot) and outputting the data to the serial monitor
   - **Bluetooth Communication**:
-    - Communication medium that will be used for loging the energy values from INA219 during the run as well as the energy gained.
+    - Functions for sending and receiving messages over Bluetooth.
 - **Adding New Programs**:
   - How to extend the codebase to include new features or control options.
 
@@ -78,4 +82,9 @@
 - Common issues during setup or operation:
   - **Bluetooth Pairing**: Solutions for pairing failures.
   - **Motor Control Issues**: Diagnosing problems with speed or turning control.
+
+### User Interface
+- The Serial Monitor in Arduino will act as the UI
+      - Will print out all necessary information (power, car state, etc) at pre-determined intervals
+      - Will use the terminal to start/stop vehicle as well as update existing parameters
 ---
