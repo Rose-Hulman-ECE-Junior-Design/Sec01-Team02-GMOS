@@ -32,6 +32,7 @@
 - The purpose of the <ins>Ohm</ins>igos robot and its relationship to ECE technology.
   - Overview of how the competition integrates electrical and computer engineering concepts like sensor data acquisition, motor control, and communication protocols.
   - Brief description of how the robot demonstrates core ECE skills, like embedded systems, power management, communication interfaces.
+      - test
 
 ### UI User Manual
 - **Bluetooth Control**:
@@ -65,7 +66,7 @@
   - **Power Monitoring**:
     - Functions to retrieve voltage, current, and power draw.
   - **Bluetooth Communication**:
-    - Functions for sending and receiving messages over Bluetooth.
+    - Communication medium that will be used for loging the energy values from INA219 during the run as well as the energy gained.
 - **Adding New Programs**:
   - How to extend the codebase to include new features or control options.
 
