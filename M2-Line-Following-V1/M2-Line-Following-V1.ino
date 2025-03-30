@@ -53,6 +53,7 @@ int kp = 0.6;                   // Experimental value for proportional controlle
 //***************************** Begin Bluetooth Config
 // Device Name (For Bluetooth):
 String deviceName = "Milton!!!";
+String deviceName = "Milton!!!";
 BluetoothSerial SerialBT; //renaming BluetoothSerial to SerialBT for so it reads better
  
 // Check if Bluetooth is available
@@ -93,16 +94,22 @@ void setup() {
     Serial.begin(baudRate);
     Wire.begin();                 //For I2C communication
     SerialBT.begin(deviceName);   //Start SerialBT
+    Serial.begin(baudRate);
+    Wire.begin();                 //For I2C communication
+    SerialBT.begin(deviceName);   //Start SerialBT
     Serial.printf("The device with name \"%s\" is started.\nNow you can pair it with Bluetooth!\n", deviceName.c_str());
    
     // INA219
     if(!ina219.begin()) {
+    if(!ina219.begin()) {
         Serial.println("Failed to find INA219 chip");
+        while(1);
         while(1);
     }
     Serial.println("INA219 Initialized");
    
     // HUSKYLENS Initilization
+    while(!huskylens.begin(Wire))
     while(!huskylens.begin(Wire))
     {
         Serial.println(F("Begin failed!"));
@@ -221,6 +228,7 @@ void processCommand(char command) {
  * @param angle is the target steering angle, where 0 is is fully left and 180 is fully right.
  */
 void setSteeringAngle(int angle) { //Could try LEDCWRITE instead of sall this John
+    angle = constrain(angle, 5, 180);
     angle = constrain(angle, 5, 180);
     float rangeMs = maxPulseWidth - minPulseWidth;
     float pulseWidthMs = minPulseWidth + ((float)angle / 180.0) * rangeMs;
