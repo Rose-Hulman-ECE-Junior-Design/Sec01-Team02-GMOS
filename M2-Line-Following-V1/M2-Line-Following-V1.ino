@@ -53,7 +53,6 @@ int kp = 0.6;                   // Experimental value for proportional controlle
 //***************************** Begin Bluetooth Config
 // Device Name (For Bluetooth):
 String deviceName = "Milton!!!";
-String deviceName = "Milton!!!";
 BluetoothSerial SerialBT; //renaming BluetoothSerial to SerialBT for so it reads better
  
 // Check if Bluetooth is available
@@ -74,7 +73,42 @@ char str[50];
 // Timer handle
 esp_timer_handle_t stateTimer;
 esp_timer_handle_t INA219BT_timer;
+
+// For Servo Turn Radius Debugging
+String angleBuffer = "";
+
+// Defining our Functions prior to setup()
+// void setSteeringAngle(int angle);
+// void setMotorSpeed(int speed);
+// void printState(void* arg);
+// void readINA219BT(void* arg);
+// void loadTimer(int time);
+// void timerLog(int time);
  
+//******************************************** Begining of Function-Definitions
+
+void loadTimer(int time) {
+  const esp_timer_create_args_t stateTimerArgs = {
+    .callback = &printState, // Function to call on timer expiration
+    .arg = NULL,
+    .dispatch_method = ESP_TIMER_TASK,
+    .name = "state_timer"
+  };
+  esp_timer_create(&stateTimerArgs, &stateTimer);
+  esp_timer_start_periodic(stateTimer, time); // time in microseconds
+}
+
+void timerLog(int time) {
+  const esp_timer_create_args_t INA219BTTimerArgs = {
+    .callback = &readINA219BT,
+    .arg = NULL,
+    .dispatch_method = ESP_TIMER_TASK,
+    .name = "INA219BT_timer"
+  };
+  esp_timer_create(&INA219BTTimerArgs, &INA219BT_timer);
+  esp_timer_start_periodic(INA219BT_timer, time);
+}
+
 // Timer callback function, prints the current state every 5 seconds
 void printState(void* arg) {
     switch (currentState) {
@@ -89,89 +123,7 @@ void printState(void* arg) {
             break;
     }
 }
- 
-void setup() {
-    Serial.begin(baudRate);
-    Wire.begin();                 //For I2C communication
-    SerialBT.begin(deviceName);   //Start SerialBT
-    Serial.begin(baudRate);
-    Wire.begin();                 //For I2C communication
-    SerialBT.begin(deviceName);   //Start SerialBT
-    Serial.printf("The device with name \"%s\" is started.\nNow you can pair it with Bluetooth!\n", deviceName.c_str());
-   
-    // INA219
-    if(!ina219.begin()) {
-    if(!ina219.begin()) {
-        Serial.println("Failed to find INA219 chip");
-        while(1);
-        while(1);
-    }
-    Serial.println("INA219 Initialized");
-   
-    // HUSKYLENS Initilization
-    while(!huskylens.begin(Wire))
-    while(!huskylens.begin(Wire))
-    {
-        Serial.println(F("Begin failed!"));
-        Serial.println(F("1.Please recheck the \"Protocol Type\" in HUSKYLENS (General Settings>>Protol Type>>I2C)"));
-        Serial.println(F("2.Please recheck the connection."));
-        delay(100);
-    }
-    Serial.println(F("HUSKYLENS Initialized"));
-    huskylens.writeAlgorithm(ALGORITHM_LINE_TRACKING); //Switch the algorithm to line tracking.
- 
-    // Steering initialization:
-    ledcAttach(steeringPin, pwmFrequency, pwmResolution);
-    setSteeringAngle(steeringAngle);
- 
-    // Motor initialization:
-    ledcAttach(speedMotorPin, pwmFrequency, pwmResolution);
-    delay(1000); // at least 1s delay to allow driver to recognize servo attachment
-    setMotorSpeed(motorSpeed); // the driver needs to first see 0-speed in order to calibrate
-    delay(3000); // this delay may need to be up to 5s (5000ms) for the driver to calibrate to 0-speed
-    motorSpeed = 50; // set a default motor speed
- 
-    // Timer setup
-    const esp_timer_create_args_t stateTimerArgs = {
-        .callback = &printState, // Function to call on timer expiration
-        .arg = NULL,
-        .dispatch_method = ESP_TIMER_TASK,
-        .name = "state_timer"
-    };
-    esp_timer_create(&stateTimerArgs, &stateTimer);
-    esp_timer_start_periodic(stateTimer, 5000000); // 5 seconds in microseconds
- 
-    // Timer setup for logging every 0.5s (500,000 microseconds)
-    const esp_timer_create_args_t INA219BTTimerArgs = {
-        .callback = &readINA219BT,
-        .arg = NULL,
-        .dispatch_method = ESP_TIMER_TASK,
-        .name = "INA219BT_timer"
-    };
-    esp_timer_create(&INA219BTTimerArgs, &INA219BT_timer);
-    esp_timer_start_periodic(INA219BT_timer, 500000);
-}
- 
-void loop() {
-    handleSerialCommunication();
-   
-    switch (currentState) {
-        case IDLE:
-            setMotorSpeed(IDLE_SPEED);
-            setSteeringAngle(STRAIGHT);
-            break;
- 
-        case DRIVE:
-            followLine();
-            break;
- 
-        case CHARGE:
-            setMotorSpeed(IDLE_SPEED);
-            setSteeringAngle(STRAIGHT);
-            break;
-    }
-}
- 
+
 /**
  * @brief Follows the line using the HuskyLens sensor.
  */
@@ -183,10 +135,9 @@ void followLine() {
     if (abs(error) > 40) {
         setMotorSpeed(motorSpeed);
     } else {
-       
         setMotorSpeed(motorSpeed + 20);
     }
-    setSteeringAngle(STRAIGHT - 0.6 * error);
+    setSteeringAngle(STRAIGHT - 0.62 * error);
 }
  
 /**
@@ -197,11 +148,36 @@ void handleSerialCommunication() {
     char command = Serial.read();
     SerialBT.write(command);
     processCommand(tolower(command));
+
+    //used for servo debugging
+    // serialChangeServoAngle(command);
   }  
   if (SerialBT.available()) {
     char command = SerialBT.read();  
     Serial.write(command);
     processCommand(tolower(command));
+  }
+}
+
+/**
+  *
+  * @brief Allows for manual changing of servo via the serial monitor
+  * @param command The character recieved from the serial monitor
+  *
+  */
+void serialChangeServoAngle(char command) {
+  if (isDigit(command)) {
+    angleBuffer += command;
+  } else if (command == '\n' || command == ' ') { // End of number
+    if (angleBuffer.length() > 0) { // While buffer isnt empty
+      int angle = angleBuffer.toInt(); // Convert to integer
+      setSteeringAngle(angle);
+
+      Serial.print("Set steering angle to: ");
+      Serial.println(angle);
+
+      angleBuffer = ""; // Clear buffer
+    }
   }
 }
  
@@ -227,9 +203,8 @@ void processCommand(char command) {
  * @brief Inputs a steering angle and sets the steering lock accordingly via PWM signal.
  * @param angle is the target steering angle, where 0 is is fully left and 180 is fully right.
  */
-void setSteeringAngle(int angle) { //Could try LEDCWRITE instead of sall this John
-    angle = constrain(angle, 5, 180);
-    angle = constrain(angle, 5, 180);
+void setSteeringAngle(int angle) { 
+    angle = constrain(angle, 0, 205);
     float rangeMs = maxPulseWidth - minPulseWidth;
     float pulseWidthMs = minPulseWidth + ((float)angle / 180.0) * rangeMs;
     int dutyCycle = (int)(pwmMax * (pulseWidthMs / periodMs));
@@ -292,4 +267,69 @@ void printResult(HUSKYLENSResult result){
         Serial.println("Object unknown!");
     }
     //delay(1000);
+}
+
+/*
+  Beginning of kernal
+*/
+void setup() {
+    Serial.begin(baudRate);
+    Wire.begin();                 //For I2C communication
+    SerialBT.begin(deviceName);   //Start SerialBT
+    Serial.printf("The device with name \"%s\" is started.\nNow you can pair it with Bluetooth!\n", deviceName.c_str());
+   
+    // INA219
+    if(!ina219.begin()) {
+        Serial.println("Failed to find INA219 chip");
+        while(1);
+    }
+    Serial.println("INA219 Initialized");
+   
+    // HUSKYLENS Initilization
+    while(!huskylens.begin(Wire))
+    {
+        Serial.println(F("Begin failed!"));
+        Serial.println(F("1.Please recheck the \"Protocol Type\" in HUSKYLENS (General Settings>>Protol Type>>I2C)"));
+        Serial.println(F("2.Please recheck the connection."));
+        delay(100);
+    }
+    Serial.println(F("HUSKYLENS Initialized"));
+    huskylens.writeAlgorithm(ALGORITHM_LINE_TRACKING); //Switch the algorithm to line tracking.
+ 
+    // Steering initialization:
+    ledcAttach(steeringPin, pwmFrequency, pwmResolution);
+    setSteeringAngle(steeringAngle);
+ 
+    // Motor initialization:
+    ledcAttach(speedMotorPin, pwmFrequency, pwmResolution);
+    delay(1000); // at least 1s delay to allow driver to recognize servo attachment
+    setMotorSpeed(motorSpeed); // the driver needs to first see 0-speed in order to calibrate
+    delay(3000); // this delay may need to be up to 5s (5000ms) for the driver to calibrate to 0-speed
+    motorSpeed = 70; // set a default motor speed
+ 
+    // Timer Value setup
+    loadTimer(5000000); //5 seconds in microseconds
+ 
+    // Timer setup for logging every 0.5s (500,000 microseconds)
+    timerLog(500000);
+}
+ 
+void loop() {
+    handleSerialCommunication();
+   
+    switch (currentState) {
+        case IDLE:
+            setMotorSpeed(IDLE_SPEED);
+            setSteeringAngle(STRAIGHT);
+            break;
+ 
+        case DRIVE:
+            followLine();
+            break;
+ 
+        case CHARGE:
+            setMotorSpeed(IDLE_SPEED);
+            setSteeringAngle(STRAIGHT);
+            break;
+    }
 }
