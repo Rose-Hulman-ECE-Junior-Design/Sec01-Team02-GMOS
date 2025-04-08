@@ -137,7 +137,9 @@ void followLine() {
     } else {
         setMotorSpeed(motorSpeed + 20);
     }
-    setSteeringAngle(STRAIGHT - 0.62 * error);
+    setSteeringAngle(STRAIGHT - 0.62 * error); // The factor of 0.62 was found via experimentation.
+                                              // It allows for the steering servo to turn tight enough on the corners while
+                                              // not oscillating to much on the straights
 }
  
 /**
