@@ -52,7 +52,7 @@ int kp = 0.6;                   // Experimental value for proportional controlle
  
 //***************************** Begin Bluetooth Config
 // Device Name (For Bluetooth):
-String deviceName = "Milton!!!";
+String deviceName = "Blue!!!";
 BluetoothSerial SerialBT; //renaming BluetoothSerial to SerialBT for so it reads better
  
 // Check if Bluetooth is available
