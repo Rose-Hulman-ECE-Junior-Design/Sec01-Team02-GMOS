@@ -22,7 +22,7 @@ int ID1 = 1;                      // Required parameter to pull data from camera
  
 // FSM parameters:
 enum State { IDLE, DRIVE, CHARGE };
-State currentState = DRIVE;
+State currentState = IDLE;
  
 // Constants:
 const int steeringPin = 32;
@@ -68,6 +68,9 @@ BluetoothSerial SerialBT; //renaming BluetoothSerial to SerialBT for so it reads
 //Misc debugging values for BT. Not important for functionality
 int testingNumber = 0;
 char str[50];
+
+bool isPaired = false;
+bool wasPaired = false;
 //***************************** End Bluetooth Config
  
 // Timer handle
@@ -76,6 +79,13 @@ esp_timer_handle_t INA219BT_timer;
 
 // For Servo Turn Radius Debugging
 String angleBuffer = "";
+
+// Variables for cumulative power consumed during run
+int totalVoltage = 0;
+int totalCurrent = 0;
+int totalPower = 0;
+float totalTimeElapsed = 0.0;
+State previousState = IDLE;
 
 // Defining our Functions prior to setup()
 // void setSteeringAngle(int angle);
@@ -87,6 +97,17 @@ String angleBuffer = "";
  
 //******************************************** Begining of Function-Definitions
 
+/**
+ * @brief Initializes and starts a periodic timer to execute a callback function.
+ * 
+ * This function sets up a timer that periodically triggers the specified callback 
+ * function, allowing for repeated execution at defined intervals.
+ * 
+ * @param time The interval in microseconds at which the timer should trigger the callback.
+ *             This determines how frequently the callback function is executed.
+ * 
+ * @return None
+ */
 void loadTimer(int time) {
   const esp_timer_create_args_t stateTimerArgs = {
     .callback = &printState, // Function to call on timer expiration
@@ -98,6 +119,19 @@ void loadTimer(int time) {
   esp_timer_start_periodic(stateTimer, time); // time in microseconds
 }
 
+
+/**
+ * @brief Sets up a periodic timer to log INA219 sensor data via Bluetooth.
+ * 
+ * This function creates and starts a periodic timer that triggers the 
+ * readINA219BT function at specified intervals to log voltage, current, 
+ * and power data from the INA219 sensor over Bluetooth.
+ * 
+ * @param time The interval in microseconds at which the timer should trigger.
+ *             This determines how frequently the INA219 data is logged.
+ * 
+ * @return None
+ */
 void timerLog(int time) {
   const esp_timer_create_args_t INA219BTTimerArgs = {
     .callback = &readINA219BT,
@@ -109,17 +143,21 @@ void timerLog(int time) {
   esp_timer_start_periodic(INA219BT_timer, time);
 }
 
+
 // Timer callback function, prints the current state every 5 seconds
 void printState(void* arg) {
     switch (currentState) {
         case IDLE:
             Serial.println("State: IDLE");
+            SerialBT.println("State: IDLE");
             break;
         case DRIVE:
             Serial.println("State: DRIVE");
+            SerialBT.println("State: DRIVE");
             break;
         case CHARGE:
             Serial.println("State: CHARGE");
+            SerialBT.println("State: CHARGE");
             break;
     }
 }
@@ -146,18 +184,35 @@ void followLine() {
  * @brief Handles incoming serial communication commands.
  */
 void handleSerialCommunication() {
-  if (Serial.available()) {
+  bluetoothPairedCheck(); // Check if Bluetooth is connected and update connection status
+  
+  if (Serial.available()) { 
     char command = Serial.read();
+    // Serial.println("Received from Serial: " + String(command)); // Debugging output
     SerialBT.write(command);
     processCommand(tolower(command));
-
-    //used for servo debugging
-    // serialChangeServoAngle(command);
   }  
   if (SerialBT.available()) {
     char command = SerialBT.read();  
+    // Serial.println("Received from Bluetooth: " + String(command)); // Debugging output
     Serial.write(command);
     processCommand(tolower(command));
+
+    SerialBT.print("Echo:");
+    SerialBT.println(command);  // Echo back over Bluetooth
+  }
+}
+
+void bluetoothPairedCheck() {
+  isPaired = SerialBT.hasClient();
+  if (isPaired &&!wasPaired) {
+    SerialBT.println("Paired with a device!");
+    Serial.println("Paired with a device!");
+    wasPaired = true;
+  } else if (!isPaired && wasPaired) {
+    SerialBT.println("Lost connection with a device.");
+    Serial.println("Lost connection with a device.");
+    wasPaired = false;
   }
 }
 
@@ -240,17 +295,50 @@ void readINA219() {
 }
  
 /**
- * @brief Outputs the car's bus voltage, current and power via BT to the serial monitor.
+ * @brief Outputs the car's bus voltage, current and power via BT to the terminal.
  */
 void readINA219BT(void* arg) {
     float busVoltage = ina219.getBusVoltage_V();
     float current_mA = ina219.getCurrent_mA();
     float power_mW = ina219.getPower_mW();
+    
+    if (currentState != IDLE) {
+      totalVoltage += busVoltage;
+      totalCurrent += current_mA;
+      totalPower += power_mW;
+      totalTimeElapsed += 0.5; // As we log every 0.5 seconds, increment by 0.5 seconds
+      previousState = currentState; 
+    }
+    else if ((currentState == IDLE) && (previousState != IDLE)) { //only want to print this out once when state changes back to IDLE
+      // SerialBT.print("Voltage Total During Run: ");
+      // SerialBT.print(totalVoltage);
+      // SerialBT.print(", ");
+      // SerialBT.print("Current Total During Run: ");
+      // SerialBT.print(totalCurrent);
+      // SerialBT.print(", ");
+      SerialBT.print("Power Total During Run: ");
+      SerialBT.print(totalPower);
+      SerialBT.print(", ");
+      SerialBT.print("Time Elapsed: ");
+      SerialBT.print(totalTimeElapsed);
+      SerialBT.print(", ");
+      SerialBT.print("Energy Total During Run: ");
+      SerialBT.println(totalPower * totalTimeElapsed); // Energy = Power * Time
+      
+      totalVoltage = 0;
+      totalCurrent = 0;
+      totalPower = 0;
+      totalTimeElapsed = 0;
+      previousState = currentState; // Reset previous state to IDLE
+    }
    
+    SerialBT.print("Voltage: ");
     SerialBT.print(busVoltage);
-    SerialBT.print(",");
+    SerialBT.print(", ");
+    SerialBT.print("Current: ");
     SerialBT.print(current_mA);
-    SerialBT.print(",");
+    SerialBT.print(", ");
+    SerialBT.print("Power: "); 
     SerialBT.println(power_mW);
 }
  
@@ -320,7 +408,7 @@ void loop() {
     handleSerialCommunication();
    
     switch (currentState) {
-        case IDLE:
+        case IDLE: // Set to IDLE at beginning and end of run
             setMotorSpeed(IDLE_SPEED);
             setSteeringAngle(STRAIGHT);
             break;
