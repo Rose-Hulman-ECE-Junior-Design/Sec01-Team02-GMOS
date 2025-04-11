@@ -85,6 +85,7 @@ int totalVoltage = 0;
 int totalCurrent = 0;
 int totalPower = 0;
 float totalTimeElapsed = 0.0;
+float totalRunTimeElapsed = 0.0;
 State previousState = IDLE;
 
 // Defining our Functions prior to setup()
@@ -175,7 +176,7 @@ void followLine() {
     } else {
         setMotorSpeed(motorSpeed + 20);
     }
-    setSteeringAngle(STRAIGHT - 0.62 * error); // The factor of 0.62 was found via experimentation.
+    setSteeringAngle(STRAIGHT - 0.59 * error); // The factor of 0.62 was found via experimentation.
                                               // It allows for the steering servo to turn tight enough on the corners while
                                               // not oscillating to much on the straights
 }
@@ -301,12 +302,13 @@ void readINA219BT(void* arg) {
     float busVoltage = ina219.getBusVoltage_V();
     float current_mA = ina219.getCurrent_mA();
     float power_mW = ina219.getPower_mW();
+    totalTimeElapsed += 0.5; // As we log every 0.5 seconds, increment by 0.5 seconds
     
     if (currentState != IDLE) {
       totalVoltage += busVoltage;
       totalCurrent += current_mA;
       totalPower += power_mW;
-      totalTimeElapsed += 0.5; // As we log every 0.5 seconds, increment by 0.5 seconds
+      totalRunTimeElapsed += 0.5; // As we log every 0.5 seconds, increment by 0.5 seconds
       previousState = currentState; 
     }
     else if ((currentState == IDLE) && (previousState != IDLE)) { //only want to print this out once when state changes back to IDLE
@@ -320,15 +322,15 @@ void readINA219BT(void* arg) {
       SerialBT.print(totalPower);
       SerialBT.print(", ");
       SerialBT.print("Time Elapsed: ");
-      SerialBT.print(totalTimeElapsed);
+      SerialBT.print(totalRunTimeElapsed);
       SerialBT.print(", ");
       SerialBT.print("Energy Total During Run: ");
-      SerialBT.println(totalPower * totalTimeElapsed); // Energy = Power * Time
+      SerialBT.println(totalPower * totalRunTimeElapsed); // Energy = Power * Time
       
       totalVoltage = 0;
       totalCurrent = 0;
       totalPower = 0;
-      totalTimeElapsed = 0;
+      totalRunTimeElapsed = 0;
       previousState = currentState; // Reset previous state to IDLE
     }
    
@@ -339,7 +341,12 @@ void readINA219BT(void* arg) {
     SerialBT.print(current_mA);
     SerialBT.print(", ");
     SerialBT.print("Power: "); 
-    SerialBT.println(power_mW);
+    SerialBT.print(power_mW);
+    SerialBT.print(", ");
+    SerialBT.print("Time: ");
+    SerialBT.println(totalTimeElapsed);
+    // SerialBT.print("Time: ");
+    // SerialBT.println(totalTimeElapsed);
 }
  
 /**
