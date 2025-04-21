@@ -1,0 +1,90 @@
+# Ohmigos Arduino ReadMe
+
+## Milestone 1
+
+### Code Files for Milestone
+**M1-Basic-Software-Functionality.ino**
+
+### Features
+- **Bluetooth**: Has dual direction communication using the ESP32's Bluetooth
+- **INA219**: Reads and displays voltage, current, and power draw at any given time
+- **Motor Control**: Provides PWM-based precise speed control
+- **Steering Control**: Provides PWM-based precise turning control
+
+## How to Use
+1. **Setup**:
+   - Connect the motor, servo, INA219 sensor, and ESP32 according to their datasheets and this project's circuit design.
+   - Flash the code onto the ESP32 using the Arduino IDE.
+
+2. **Bluetooth Pairing**:
+   - Pair the ESP32 with your Bluetooth device using the name `ECE362CarTeam02`.
+   - Open a serial terminal or Bluetooth terminal application to send and receive messages.
+
+3. **Operation**:
+   - Use the serial terminal to interact with the ESP32.
+   - Monitor sensor data and adjust motor speed and steering angle through the provided interfaces.
+
+---
+
+## Documentation Plan (not offical documentation yet)
+
+### Introduction
+- The purpose of the <ins>Ohm</ins>igos robot and its relationship to ECE technology.
+  - Overview of how the competition integrates electrical and computer engineering concepts like sensor data acquisition, motor control, and communication protocols.
+  - Brief description of how the robot demonstrates core ECE skills, like embedded systems, power management, communication interfaces.
+      - power tracking
+      - circuits
+      - object oriented code
+      - etc
+
+### UI User Manual
+- **Bluetooth Control**:
+  - How to connect to the robot over Bluetooth.
+  - Command set for interacting with the robot (e.g., change state, speed, etc.).
+- **LED Array**:
+  - Interpreting the battery charge status.
+  - LED indications for robot states (idle, drive, charge).
+- **Adjustable Speed**:
+  - Instructions for modifying the robot's speed using Bluetooth.
+
+### How to Get and Use the Software
+1. **Prerequisites**:
+   - Required hardware components (list with specifications).
+   - Required software (e.g., Arduino IDE, libraries such as `Wire.h`, `Adafruit_INA219.h`).
+2. **Setup**:
+   - Step-by-step guide for wiring the robot components.
+   - Instructions for downloading, modifying, and flashing the code.
+3. **Execution**:
+   - Pairing the robot with a Bluetooth device.
+   - Operating the robot using Tera Term.
+
+### API Documentation
+- **Overview**:
+  - Description of functions provided in the code for motor and steering control, INA219 data reading, and Bluetooth communication.
+- **Function Reference**:
+  - **Motor Control**:
+    - Function to set motor speed (parameters and usage).
+  - **Steering Control**:
+    - Function to set servo angle (parameters and usage).
+  - **Power Monitoring**:
+    - Functions to retrieve voltage, current, and power draw.
+         - Will most likely be parsing the incoming BT message for the data we want (from the robot), then accumulating the total power consumed as well as total power recharged (can differentiate via state of robot) and outputting the data to the serial monitor
+  - **Bluetooth Communication**:
+    - Functions for sending and receiving messages over Bluetooth.
+- **Adding New Programs**:
+  - How to extend the codebase to include new features or control options.
+
+### Educational Features
+- Future additions to make the robot accessible to users with little experience in coding and to allow them to learn what parts of the code does
+  - **Pre-Built Modes**: Demonstration programs for obstacle avoidance, line-following, etc.
+
+### FAQ Troubleshooting
+- Common issues during setup or operation:
+  - **Bluetooth Pairing**: Solutions for pairing failures.
+  - **Motor Control Issues**: Diagnosing problems with speed or turning control.
+
+### User Interface
+- The Serial Monitor in Arduino will act as the UI
+      - Will print out all necessary information (power, car state, etc) at pre-determined intervals
+      - Will use the terminal to start/stop vehicle as well as update existing parameters
+---
