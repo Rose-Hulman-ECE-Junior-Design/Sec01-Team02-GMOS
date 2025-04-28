@@ -34,19 +34,8 @@
       - I: IDLE
       - C: CHARGE
    - The car also is will begin to log the bus voltage from the first transition into DRIVE (from IDLE), through the CHARGE phase, until the car is set back to idle. The data is stored as two separate arrays: one for voltage over time, another for the state over time. The indices are equivalent to 0.5s time steps, and thus can be useful for plotting the change in energy over a competition run. To print out the last run's data, simply enter "get raw data", and both arrays will be printed to the terminal. To only get the energy expended/gained over a heat, enter: "get energy".
-   - Appearence:
-
-"Press key to change state..."
-
-"D to Drive"
-
-"I to Idle"
-
-"C to Charge"
-
-"Key Pressed: __"
-
-"-------------------------------"
+   - Appearence: ![alt text][logo]
+   [logo]: https://github.com/Rose-Hulman-ECE-Junior-Design/Sec01-Team02-GMOS/blob/main/Images/TestSS.png "The Screen Shot of our actual UI will appear here"
 
 ---
 
