@@ -88,6 +88,8 @@ float totalTimeElapsed = 0.0;
 float totalRunTimeElapsed = 0.0;
 State previousState = IDLE;
 
+bool resetUI = false; //used in deciding if we need to resend the UI interface
+
 // Defining our Functions prior to setup()
 // void setSteeringAngle(int angle);
 // void setMotorSpeed(int speed);
@@ -147,20 +149,20 @@ void timerLog(int time) {
 
 // Timer callback function, prints the current state every 5 seconds
 void printState(void* arg) {
-    switch (currentState) {
-        case IDLE:
-            Serial.println("State: IDLE");
-            SerialBT.println("State: IDLE");
-            break;
-        case DRIVE:
-            Serial.println("State: DRIVE");
-            SerialBT.println("State: DRIVE");
-            break;
-        case CHARGE:
-            Serial.println("State: CHARGE");
-            SerialBT.println("State: CHARGE");
-            break;
-    }
+    // switch (currentState) {
+    //     case IDLE:
+    //         Serial.println("State: IDLE");
+    //         SerialBT.println("State: IDLE");
+    //         break;
+    //     case DRIVE:
+    //         Serial.println("State: DRIVE");
+    //         SerialBT.println("State: DRIVE");
+    //         break;
+    //     case CHARGE:
+    //         Serial.println("State: CHARGE");
+    //         SerialBT.println("State: CHARGE");
+    //         break;
+    // }
 }
 
 /**
@@ -199,8 +201,24 @@ void handleSerialCommunication() {
     Serial.write(command);
     processCommand(tolower(command));
 
-    SerialBT.print("Echo:");
+    resetUI = true;
+    UIimplementation(command);
+  }
+}
+
+void UIimplementation(char command) {
+
+  if (resetUI) {
+    resetUI = false; // Prevent the UI from constantly displaying the same information
+    SerialBT.println("Press key to change state...");
+    SerialBT.println("D to Drive");
+    SerialBT.println("I to Idle");
+    SerialBT.println("C to Charge");
+
+    SerialBT.print("Key Pressed: ");
     SerialBT.println(command);  // Echo back over Bluetooth
+    SerialBT.println("-------------------------------");
+
   }
 }
 
@@ -299,52 +317,52 @@ void readINA219() {
  * @brief Outputs the car's bus voltage, current and power via BT to the terminal.
  */
 void readINA219BT(void* arg) {
-    float busVoltage = ina219.getBusVoltage_V();
-    float current_mA = ina219.getCurrent_mA();
-    float power_mW = ina219.getPower_mW();
-    totalTimeElapsed += 0.5; // As we log every 0.5 seconds, increment by 0.5 seconds
+    // float busVoltage = ina219.getBusVoltage_V();
+    // float current_mA = ina219.getCurrent_mA();
+    // float power_mW = ina219.getPower_mW();
+    // totalTimeElapsed += 0.5; // As we log every 0.5 seconds, increment by 0.5 seconds
     
-    if (currentState != IDLE) {
-      totalVoltage += busVoltage;
-      totalCurrent += current_mA;
-      totalPower += power_mW;
-      totalRunTimeElapsed += 0.5; // As we log every 0.5 seconds, increment by 0.5 seconds
-      previousState = currentState; 
-    }
-    else if ((currentState == IDLE) && (previousState != IDLE)) { //only want to print this out once when state changes back to IDLE
-      // SerialBT.print("Voltage Total During Run: ");
-      // SerialBT.print(totalVoltage);
-      // SerialBT.print(", ");
-      // SerialBT.print("Current Total During Run: ");
-      // SerialBT.print(totalCurrent);
-      // SerialBT.print(", ");
-      SerialBT.print("Power Total During Run: ");
-      SerialBT.print(totalPower);
-      SerialBT.print(", ");
-      SerialBT.print("Time Elapsed: ");
-      SerialBT.print(totalRunTimeElapsed);
-      SerialBT.print(", ");
-      SerialBT.print("Energy Total During Run: ");
-      SerialBT.println(totalPower * totalRunTimeElapsed); // Energy = Power * Time
+    // if (currentState != IDLE) {
+    //   totalVoltage += busVoltage;
+    //   totalCurrent += current_mA;
+    //   totalPower += power_mW;
+    //   totalRunTimeElapsed += 0.5; // As we log every 0.5 seconds, increment by 0.5 seconds
+    //   previousState = currentState; 
+    // }
+    // else if ((currentState == IDLE) && (previousState != IDLE)) { //only want to print this out once when state changes back to IDLE
+    //   // SerialBT.print("Voltage Total During Run: ");
+    //   // SerialBT.print(totalVoltage);
+    //   // SerialBT.print(", ");
+    //   // SerialBT.print("Current Total During Run: ");
+    //   // SerialBT.print(totalCurrent);
+    //   // SerialBT.print(", ");
+    //   SerialBT.print("Power Total During Run: ");
+    //   SerialBT.print(totalPower);
+    //   SerialBT.print(", ");
+    //   SerialBT.print("Time Elapsed: ");
+    //   SerialBT.print(totalRunTimeElapsed);
+    //   SerialBT.print(", ");
+    //   SerialBT.print("Energy Total During Run: ");
+    //   SerialBT.println(totalPower * totalRunTimeElapsed); // Energy = Power * Time
       
-      totalVoltage = 0;
-      totalCurrent = 0;
-      totalPower = 0;
-      totalRunTimeElapsed = 0;
-      previousState = currentState; // Reset previous state to IDLE
-    }
+    //   totalVoltage = 0;
+    //   totalCurrent = 0;
+    //   totalPower = 0;
+    //   totalRunTimeElapsed = 0;
+    //   previousState = currentState; // Reset previous state to IDLE
+    // }
    
-    SerialBT.print("Voltage: ");
-    SerialBT.print(busVoltage);
-    SerialBT.print(", ");
-    SerialBT.print("Current: ");
-    SerialBT.print(current_mA);
-    SerialBT.print(", ");
-    SerialBT.print("Power: "); 
-    SerialBT.print(power_mW);
-    SerialBT.print(", ");
-    SerialBT.print("Time: ");
-    SerialBT.println(totalTimeElapsed);
+    // SerialBT.print("Voltage: ");
+    // SerialBT.print(busVoltage);
+    // SerialBT.print(", ");
+    // SerialBT.print("Current: ");
+    // SerialBT.print(current_mA);
+    // SerialBT.print(", ");
+    // SerialBT.print("Power: "); 
+    // SerialBT.print(power_mW);
+    // SerialBT.print(", ");
+    // SerialBT.print("Time: ");
+    // SerialBT.println(totalTimeElapsed);
     // SerialBT.print("Time: ");
     // SerialBT.println(totalTimeElapsed);
 }
