@@ -37,11 +37,15 @@
    - Appearence:
 
 "Press key to change state..."
+
 "D to Drive"
+
 "I to Idle"
+
 "C to Charge"
 
 "Key Pressed: __"
+
 "-------------------------------"
 
 ---
