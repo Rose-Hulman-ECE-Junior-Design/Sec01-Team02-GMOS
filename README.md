@@ -6,23 +6,34 @@
 **M1-Basic-Software-Functionality.ino**
 
 ### Features
+- **Autonomous Driving**: Implements self-driving via image processing of a reference target path and a simple control algorithm
 - **Bluetooth**: Has dual direction communication using the ESP32's Bluetooth
 - **INA219**: Reads and displays voltage, current, and power draw at any given time
 - **Motor Control**: Provides PWM-based precise speed control
-- **Steering Control**: Provides PWM-based precise turning control
+- **Steering Control**: Provides PWM-based precise turning control, which is used by the autonomous line following algorithm
+
+## System Architecture
+- The vehicle is implemented as a "state machine"
+   - A state machine is like a flowchart that shows how something changes based on different actions. It has states and rules for moving between them. For example, think about a vending machine: it starts in a "waiting for money" state. When you put in $1, it moves to a "has $1" state. If you add another $1, it goes to a "has $2" state. Once you have enough money and pick a snack, it gives you the snack and goes back to "waiting for money." Every time you put money in or make a choice, you're causing the machine to change its state!
+- The car is the same way: we have "DRIVE", "IDLE" and "CHARGE" states, and through the user interface, you can change the state the car is in.
 
 ## How to Use
 1. **Setup**:
-   - Connect the motor, servo, INA219 sensor, and ESP32 according to their datasheets and this project's circuit design.
-   - Flash the code onto the ESP32 using the Arduino IDE.
+   - Ensure that the vehicle electronics are hooked up to the power supply.
+   - Check that there are no loose screws, and that everything is snugly fit to the vehicle.
+   - Flash the code onto the ESP32 using the Arduino IDE, making sure that the switch for the power supply is turned OFF: the car is powered over USB for programming.
 
 2. **Bluetooth Pairing**:
    - Pair the ESP32 with your Bluetooth device using the name `ECE362CarTeam02`.
    - Open a serial terminal or Bluetooth terminal application to send and receive messages.
 
-3. **Operation**:
-   - Use the serial terminal to interact with the ESP32.
-   - Monitor sensor data and adjust motor speed and steering angle through the provided interfaces.
+3. **Commandline User Interface**:
+   - Use TeraTerm serial terminal to interact with the ESP32.
+   - State transitions are done by entering the corresponding character:
+      - D: DRIVE
+      - I: IDLE
+      - C: CHARGE
+   - The car also is will begin to log the bus voltage from the first transition into DRIVE (from IDLE), through the CHARGE phase, until the car is set back to idle. The data is stored as two separate arrays: one for voltage over time, another for the state over time. The indices are equivalent to 0.5s time steps, and thus can be useful for plotting the change in energy over a competition run. To print out the last run's data, simply enter "get raw data", and both arrays will be printed to the terminal. To only get the energy expended/gained over a heat, enter: "get energy".
 
 ---
 
