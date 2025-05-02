@@ -90,6 +90,9 @@ State previousState = IDLE;
 
 bool resetUI = false; //used in deciding if we need to resend the UI interface
 
+char inputBuffer[50];  // Buffer to hold the input
+int inputIndex = 0;
+
 // Defining our Functions prior to setup()
 // void setSteeringAngle(int angle);
 // void setMotorSpeed(int speed);
@@ -191,15 +194,11 @@ void handleSerialCommunication() {
   
   if (Serial.available()) { 
     char command = Serial.read();
-    // Serial.println("Received from Serial: " + String(command)); // Debugging output
     SerialBT.write(command);
     processCommand(tolower(command));
   }  
   if (SerialBT.available()) {
     char command = SerialBT.read();  
-    // Serial.println("Received from Bluetooth: " + String(command)); // Debugging output
-    Serial.write(command);
-    processCommand(tolower(command));
 
     resetUI = true;
     UIimplementation(command);
@@ -214,12 +213,42 @@ void UIimplementation(char command) {
     SerialBT.println("D to Drive");
     SerialBT.println("I to Idle");
     SerialBT.println("C to Charge");
+    SerialBT.println("Speed to change Speed");
+    SerialBT.println("EC to change the Error Constant");
 
     SerialBT.print("Key Pressed: ");
     SerialBT.println(command);  // Echo back over Bluetooth
     SerialBT.println("-------------------------------");
-
   }
+
+  inputFromUser(command);
+}
+
+void inputFromUser(char command) {
+
+  if (command != '\n') { // if ENTER is not pressed
+    inputBuffer[inputIndex++] = recievedChar;
+    
+    for (int i = 0, i < inputIndex, i++) {
+      SerialBT.print(inputBuffer[i]);
+    }
+    SerialBT.println(' ');
+  }
+  else if (command == '\b' || command == 127) { //if BACKSPACE or DELETE is pressed
+    if (inputIndex > 0) { // Edge case
+      inputBuffer[inputIndex--] = ' ';
+      
+      // Move cursor back and overwrite current termial value
+      SerialBT.write('\b');
+      SerialBT.write(' ');
+      SerialBT.write('\b');
+    }
+  }
+  else { // ENTER is pressed
+    inputBuffer[inputIndex] = '\0'; // put Null-Term at end of buffer
+    processCommand(tolower(command));
+  }
+
 }
 
 void bluetoothPairedCheck() {
@@ -261,18 +290,22 @@ void serialChangeServoAngle(char command) {
  * @brief Processes command input and changes state accordingly.
  * @param command The command character received.
  */
-void processCommand(char command) {
-    switch (command) {
-        case 'i':
-            currentState = IDLE;
-            break;
-        case 'd':
-            currentState = DRIVE;
-            break;
-        case 'c':
-            currentState = CHARGE;
-            break;
-    }
+void processCommand(char* command) {
+  if (strncmp(command, "i", 1) == 0) { // If command is i
+    currentState = IDLE;
+  }
+  else if (strncmp(command, "d", 1) == 0) {
+    currentState = DRIVE;
+  }
+  else if (strncmp(command, "i", 1) == 0) {
+    currentState = CHARGE;
+  }
+  else if (strncmp(command, "speed ", 6) == 0) {
+    int newSpeed = atoi(command + 6); // skips first 6 characters then turns the rest into speed
+  }
+  else if ((strncmp(command, "Error Constant ", 15) == 0)) {
+
+  }
 }
  
 /**
