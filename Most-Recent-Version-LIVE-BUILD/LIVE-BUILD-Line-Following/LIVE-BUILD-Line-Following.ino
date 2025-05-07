@@ -90,7 +90,7 @@ State previousState = IDLE;
 
 bool resetUI = false; //used in deciding if we need to resend the UI interface
 
-char inputBuffer[50];  // Buffer to hold the input
+char inputBuffer[200];  // Buffer to hold the input
 int inputIndex = 0;
 
 // Defining our Functions prior to setup()
@@ -192,11 +192,15 @@ void followLine() {
 void handleSerialCommunication() {
   bluetoothPairedCheck(); // Check if Bluetooth is connected and update connection status
   
-  if (Serial.available()) { 
-    char command = Serial.read();
-    SerialBT.write(command);
-    processCommand(tolower(command));
-  }  
+  // Used for Serial Communication
+  //*************************************
+  // if (Serial.available()) { 
+  //   char command = Serial.read();
+  //   SerialBT.write(command);
+  //   processCommand(tolower(command));
+  // }  
+  //*************************************
+
   if (SerialBT.available()) {
     char command = SerialBT.read();  
 
@@ -215,40 +219,52 @@ void UIimplementation(char command) {
     SerialBT.println("C to Charge");
     SerialBT.println("Speed to change Speed");
     SerialBT.println("EC to change the Error Constant");
+    SerialBT.println("Input From User: ");
+    inputFromUser(command);
 
-    SerialBT.print("Key Pressed: ");
-    SerialBT.println(command);  // Echo back over Bluetooth
     SerialBT.println("-------------------------------");
   }
-
-  inputFromUser(command);
 }
 
 void inputFromUser(char command) {
 
   if (command != '\n') { // if ENTER is not pressed
-    inputBuffer[inputIndex++] = recievedChar;
+    inputBuffer[inputIndex++] = command; // Add pressed key to the buffer
     
-    for (int i = 0, i < inputIndex, i++) {
-      SerialBT.print(inputBuffer[i]);
-    }
-    SerialBT.println(' ');
+    printOutStoredArray(inputBuffer);
   }
-  else if (command == '\b' || command == 127) { //if BACKSPACE or DELETE is pressed
-    if (inputIndex > 0) { // Edge case
-      inputBuffer[inputIndex--] = ' ';
-      
-      // Move cursor back and overwrite current termial value
-      SerialBT.write('\b');
-      SerialBT.write(' ');
-      SerialBT.write('\b');
-    }
-  }
-  else { // ENTER is pressed
-    inputBuffer[inputIndex] = '\0'; // put Null-Term at end of buffer
-    processCommand(tolower(command));
+  else if (command == '\b' || command == 127) { // BACKSPACE or DELETE
+      if (inputIndex > 0) {
+        inputIndex--;                     
+        inputBuffer[inputIndex] = '\0';   // remove last char
+
+        printOutStoredArray(inputBuffer);
+      }
   }
 
+  else { // ENTER is pressed
+    inputBuffer[inputIndex] = '\0'; // put Null-Term at end of buffer
+
+    //Turn the entire buffer to lowercase: We do this (instead of turnning each individual letter to lower case) because we use a pointer for processCommand(). As tolower() returns the 
+    //ASCI value of the char, we can't give processCommand() a pointer to an int instead of a char, so we have to put the raw, typed in value first, then change it to lower case
+    for (int i = 0; i < sizeof(inputBuffer); i++ ) {
+      inputBuffer[i] = (char)tolower(inputBuffer[i]);
+    }
+
+    processCommand(inputBuffer);
+
+    // Reset the buffer
+    for (int i = 0; i < inputIndex; i++) {
+      inputBuffer[i] = '/0';
+    }
+    inputIndex = 0;
+  }
+
+}
+
+void printOutStoredArray(char *inputBuffer) {
+  SerialBT.print(inputBuffer);
+  SerialBT.println(' ');
 }
 
 void bluetoothPairedCheck() {
@@ -303,7 +319,7 @@ void processCommand(char* command) {
   else if (strncmp(command, "speed ", 6) == 0) {
     int newSpeed = atoi(command + 6); // skips first 6 characters then turns the rest into speed
   }
-  else if ((strncmp(command, "Error Constant ", 15) == 0)) {
+  else if ((strncmp(command, "EC ", 3) == 0)) {
 
   }
 }
