@@ -181,7 +181,7 @@ void followLine() {
     } else {
         setMotorSpeed(motorSpeed + 20);
     }
-    setSteeringAngle(STRAIGHT - 0.59 * error); // The factor of 0.62 was found via experimentation.
+    setSteeringAngle(STRAIGHT - 0.59 * error); // The factor of 0.59 was found via experimentation.
                                               // It allows for the steering servo to turn tight enough on the corners while
                                               // not oscillating to much on the straights
 }
@@ -204,31 +204,38 @@ void handleSerialCommunication() {
   if (SerialBT.available()) {
     char command = SerialBT.read();  
 
-    resetUI = true;
     UIimplementation(command);
   }
 }
 
 void UIimplementation(char command) {
 
-  if (resetUI) {
-    resetUI = false; // Prevent the UI from constantly displaying the same information
     SerialBT.println("Press key to change state...");
     SerialBT.println("D to Drive");
     SerialBT.println("I to Idle");
     SerialBT.println("C to Charge");
-    SerialBT.println("Speed to change Speed");
-    SerialBT.println("EC to change the Error Constant");
+    SerialBT.println(" ");
+    SerialBT.println("Speed to change Speed. Can only be between 45 -> . DEFAULT: 70");
+    SerialBT.print("Speed: ");
+    SerialBT.println(motorSpeed);
+    SerialBT.println(" ");
+    SerialBT.println("EC to change the Error Constant. DEFAULT: 0.59");
+    SerialBT.print("Error Constant: ");
+    SerialBT.println(error);
+    SerialBT.println(" ");
+    SerialBT.println("Current State: ");
+    SerialBT.println(currentState);
+    SerialBT.println(" ");
     SerialBT.println("Input From User: ");
     inputFromUser(command);
-
+    SerialBT.println(" ");
     SerialBT.println("-------------------------------");
-  }
+
 }
 
 void inputFromUser(char command) {
 
-  if (command != '\n') { // if ENTER is not pressed
+  if (command != 0x0D) { // if ENTER is not pressed
     inputBuffer[inputIndex++] = command; // Add pressed key to the buffer
     
     printOutStoredArray(inputBuffer);
@@ -253,10 +260,7 @@ void inputFromUser(char command) {
 
     processCommand(inputBuffer);
 
-    // Reset the buffer
-    for (int i = 0; i < inputIndex; i++) {
-      inputBuffer[i] = '/0';
-    }
+    memset(inputBuffer, 0, sizeof(inputBuffer));  // fill ALL 200 bytes with '\0'
     inputIndex = 0;
   }
 
@@ -307,21 +311,36 @@ void serialChangeServoAngle(char command) {
  * @param command The command character received.
  */
 void processCommand(char* command) {
-  if (strncmp(command, "i", 1) == 0) { // If command is i
+  if ((strncmp(command, "i", 1) == 0) && (inputIndex == 1)) { // If command is i and only i 
     currentState = IDLE;
   }
-  else if (strncmp(command, "d", 1) == 0) {
+  else if ((strncmp(command, "d", 1) == 0) && (inputIndex == 1)) {
     currentState = DRIVE;
   }
-  else if (strncmp(command, "i", 1) == 0) {
+  else if ((strncmp(command, "c", 1) == 0) && (inputIndex == 1)) {
     currentState = CHARGE;
   }
   else if (strncmp(command, "speed ", 6) == 0) {
     int newSpeed = atoi(command + 6); // skips first 6 characters then turns the rest into speed
+    if (newSpeed <= 100 && newSpeed >= 45) {
+      motorSpeed = newSpeed;
+    }
+    else {
+      SerialBT.print("Please Pick a speed between 45 & 52");
+    }
   }
-  else if ((strncmp(command, "EC ", 3) == 0)) {
+  else if ((strncmp(command, "ec ", 3) == 0)) {
+    int errorConstant = atoi(command + 3);
 
+    if (errorConstant > 0) {
+      error = errorConstant;
+    }
+    else {
+      SerialBT.print("Cannot do a negative Error Constant");
+    }
+    
   }
+
 }
  
 /**
