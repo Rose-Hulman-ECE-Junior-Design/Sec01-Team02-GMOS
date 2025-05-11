@@ -93,6 +93,8 @@ bool resetUI = false; //used in deciding if we need to resend the UI interface
 char inputBuffer[200];  // Buffer to hold the input
 int inputIndex = 0;
 
+float errorConstant = 0.59;
+
 // Defining our Functions prior to setup()
 // void setSteeringAngle(int angle);
 // void setMotorSpeed(int speed);
@@ -181,7 +183,7 @@ void followLine() {
     } else {
         setMotorSpeed(motorSpeed + 20);
     }
-    setSteeringAngle(STRAIGHT - 0.59 * error); // The factor of 0.59 was found via experimentation.
+    setSteeringAngle(STRAIGHT - errorConstant * error); // The factor of 0.59 was found via experimentation.
                                               // It allows for the steering servo to turn tight enough on the corners while
                                               // not oscillating to much on the straights
 }
@@ -210,27 +212,37 @@ void handleSerialCommunication() {
 
 void UIimplementation(char command) {
 
-    SerialBT.println("Press key to change state...");
-    SerialBT.println("D to Drive");
-    SerialBT.println("I to Idle");
-    SerialBT.println("C to Charge");
-    SerialBT.println(" ");
-    SerialBT.println("Speed to change Speed. Can only be between 45 -> . DEFAULT: 70");
-    SerialBT.print("Speed: ");
-    SerialBT.println(motorSpeed);
-    SerialBT.println(" ");
-    SerialBT.println("EC to change the Error Constant. DEFAULT: 0.59");
-    SerialBT.print("Error Constant: ");
-    SerialBT.println(error);
-    SerialBT.println(" ");
-    SerialBT.println("Current State: ");
-    SerialBT.println(currentState);
-    SerialBT.println(" ");
     SerialBT.println("Input From User: ");
     inputFromUser(command);
     SerialBT.println(" ");
-    SerialBT.println("-------------------------------");
+    SerialBT.println("Press ENTER to confirm...");
+    SerialBT.println(" ");
 
+    SerialBT.println("Commands: ");
+    SerialBT.println("[D] to Drive");
+    SerialBT.println("[I] to Idle");
+    SerialBT.println("[C] to Charge");
+    SerialBT.println("Current State: ");
+    SerialBT.print(stateName(currentState));
+    SerialBT.println(" ");
+    SerialBT.println("[Speed] to change Speed. Can only be between 45 -> . DEFAULT: 70");
+    SerialBT.print("Speed: ");
+    SerialBT.println(motorSpeed);
+    SerialBT.println(" ");
+    SerialBT.println("[EC] to change the Error Constant. DEFAULT: 0.59");
+    SerialBT.print("Error Constant: ");
+    SerialBT.println(errorConstant);
+    SerialBT.println(" ");
+    SerialBT.println("-------------------------------");
+}
+
+const char* stateName(State s) {
+  switch(s) {
+    case IDLE: return "IDLE";
+    case DRIVE: return "DRIVE";
+    case CHARGE: return "CHARGE";
+    default: return "UNKNOWN";
+  }
 }
 
 void inputFromUser(char command) {
@@ -241,9 +253,8 @@ void inputFromUser(char command) {
     printOutStoredArray(inputBuffer);
   }
   else if (command == '\b' || command == 127) { // BACKSPACE or DELETE
-      if (inputIndex > 0) {
-        inputIndex--;                     
-        inputBuffer[inputIndex] = '\0';   // remove last char
+      if (inputIndex > 0) {                     
+        inputBuffer[inputIndex--] = '\0';   // remove last char
 
         printOutStoredArray(inputBuffer);
       }
@@ -330,10 +341,10 @@ void processCommand(char* command) {
     }
   }
   else if ((strncmp(command, "ec ", 3) == 0)) {
-    int errorConstant = atoi(command + 3);
+    int newEC = atoi(command + 3);
 
-    if (errorConstant > 0) {
-      error = errorConstant;
+    if (newEC > 0) {
+      errorConstant = newEC;
     }
     else {
       SerialBT.print("Cannot do a negative Error Constant");
