@@ -218,21 +218,26 @@ void UIimplementation(char command) {
     SerialBT.println("Press ENTER to confirm...");
     SerialBT.println(" ");
 
-    SerialBT.println("Commands: ");
-    SerialBT.println("[D] to Drive");
-    SerialBT.println("[I] to Idle");
-    SerialBT.println("[C] to Charge");
+    SerialBT.println("Commands (not case sensitive): ");
+    SerialBT.println("Type [D] to Drive");
+    SerialBT.println("Type [I] to Idle");
+    SerialBT.println("Type [C] to Charge");
+    SerialBT.println(" ");
+    SerialBT.println("Type [Speed X] to change Speed, where X is a number between 45 -> 120. DEFAULT: 70");
+    SerialBT.println(" ");
+    SerialBT.println("Type [EC X] to change the Error Constant, where X is a non negative number. DEFAULT: 0.59");
+    SerialBT.println(" ");
+    SerialBT.println("Type [Data] to collect the data from the run"); //TODO: Data collection
+    SerialBT.println(" ");
+    SerialBT.println("Parameters: ");
     SerialBT.println("Current State: ");
     SerialBT.print(stateName(currentState));
     SerialBT.println(" ");
-    SerialBT.println("[Speed] to change Speed. Can only be between 45 -> . DEFAULT: 70");
+    SerialBT.println(" ");
     SerialBT.print("Speed: ");
     SerialBT.println(motorSpeed);
-    SerialBT.println(" ");
-    SerialBT.println("[EC] to change the Error Constant. DEFAULT: 0.59");
     SerialBT.print("Error Constant: ");
     SerialBT.println(errorConstant);
-    SerialBT.println(" ");
     SerialBT.println("-------------------------------");
 }
 
@@ -247,20 +252,7 @@ const char* stateName(State s) {
 
 void inputFromUser(char command) {
 
-  if (command != 0x0D) { // if ENTER is not pressed
-    inputBuffer[inputIndex++] = command; // Add pressed key to the buffer
-    
-    printOutStoredArray(inputBuffer);
-  }
-  else if (command == '\b' || command == 127) { // BACKSPACE or DELETE
-      if (inputIndex > 0) {                     
-        inputBuffer[inputIndex--] = '\0';   // remove last char
-
-        printOutStoredArray(inputBuffer);
-      }
-  }
-
-  else { // ENTER is pressed
+  if (command == 0x0D) { // ENTER is pressed
     inputBuffer[inputIndex] = '\0'; // put Null-Term at end of buffer
 
     //Turn the entire buffer to lowercase: We do this (instead of turnning each individual letter to lower case) because we use a pointer for processCommand(). As tolower() returns the 
@@ -273,6 +265,21 @@ void inputFromUser(char command) {
 
     memset(inputBuffer, 0, sizeof(inputBuffer));  // fill ALL 200 bytes with '\0'
     inputIndex = 0;
+  }
+  
+  else if (command == '\b' || command == 127) { // BACKSPACE or DELETE     
+    if (inputIndex > 0) {
+      inputIndex--;
+      inputBuffer[inputIndex] = '\0';
+    }
+
+    printOutStoredArray(inputBuffer);
+  }
+  
+  else { // any key is pressed
+    inputBuffer[inputIndex++] = command; // Add pressed key to the buffer
+    
+    printOutStoredArray(inputBuffer);
   }
 
 }
@@ -333,17 +340,17 @@ void processCommand(char* command) {
   }
   else if (strncmp(command, "speed ", 6) == 0) {
     int newSpeed = atoi(command + 6); // skips first 6 characters then turns the rest into speed
-    if (newSpeed <= 100 && newSpeed >= 45) {
+    if (newSpeed <= 120 && newSpeed >= 45) {
       motorSpeed = newSpeed;
     }
     else {
-      SerialBT.print("Please Pick a speed between 45 & 52");
+      SerialBT.print("Please Pick a speed between 45 & 120");
     }
   }
   else if ((strncmp(command, "ec ", 3) == 0)) {
-    int newEC = atoi(command + 3);
+    float newEC = atof(command + 3);
 
-    if (newEC > 0) {
+    if (newEC >= 0) {
       errorConstant = newEC;
     }
     else {
