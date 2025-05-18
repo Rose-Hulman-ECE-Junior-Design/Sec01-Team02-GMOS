@@ -85,13 +85,7 @@ esp_timer_handle_t INA219BT_timer;
 // For Servo Turn Radius Debugging
 String angleBuffer = "";
 
-// Variables for cumulative power consumed during run
-int totalVoltage = 0;
-int totalCurrent = 0;
-int totalPower = 0;
-float totalTimeElapsed = 0.0;
-float totalRunTimeElapsed = 0.0;
-State previousState = IDLE;
+
 
 bool resetUI = false; // used in deciding if we need to resend the UI interface
 
@@ -99,6 +93,33 @@ char inputBuffer[200]; // Buffer to hold the input
 int inputIndex = 0;
 
 float errorConstant = 0.59;
+
+float busVoltage = 0.0;
+float current_mA = 0.0;
+float power_mW = 0.0;
+
+float initialBatteryVoltage = 0.0;
+float initialBatteryCurrent = 0.0;
+float initialBatteryPower = 0.0;
+float driveBatteryVoltage = 0.0;
+float driveBatteryCurrent = 0.0;
+float driveBatteryPower = 0.0;
+float totalBatteryVoltageUsed = 0.0;
+float totalBatteryVoltageUsed = 0.0;
+float totalBatteryVoltageUsed = 0.0;
+float totalEnergyUsed = 0.0;
+float batteryChargeVoltage = 0.0;
+float batteryChargeCurrent = 0.0;
+float batteryChargePower = 0.0;
+float FinalBatteryChargeVoltage = 0.0;
+float FinalBatteryChargeCurrent = 0.0;
+float FinalBatteryChargePower = 0.0;
+float totalEnergyGained = 0.0;
+
+
+float totalElapsedRunTime = 0.0;
+bool onceDuringRun = true;
+State previousState = IDLE;
 
 // Defining our Functions prior to setup()
 // void setSteeringAngle(int angle);
@@ -234,7 +255,7 @@ void UIimplementation(char command)
   SerialBT.println("Type [I] to Idle");
   SerialBT.println("Type [C] to Charge");
   SerialBT.println(" ");
-  SerialBT.println("Type [Speed X] to change Speed, where X is a number between 45 -> 120. DEFAULT: 70");
+  SerialBT.println("Type [Speed X] to change Speed, where X is an integer between 45 -> 120. DEFAULT: 70");
   SerialBT.println(" ");
   SerialBT.println("Type [EC X] to change the Error Constant, where X is a non negative number. DEFAULT: 0.59");
   SerialBT.println(" ");
@@ -298,8 +319,8 @@ void inputFromUser(char command)
     printOutStoredArray(inputBuffer);
   }
 
-  else
-  {                                      // any key is pressed
+  else // any key is pressed
+  {                                      
     inputBuffer[inputIndex++] = command; // Add pressed key to the buffer
 
     printOutStoredArray(inputBuffer);
@@ -428,24 +449,13 @@ void setMotorSpeed(int speed)
 }
 
 /**
- * @brief Outputs the car's bus voltage, current and power via I2C to the serial monitor.
+ * @brief Updates variable to record the car's bus voltage, current and power via I2C to the serial monitor.
  */
 void readINA219()
 {
-  float busVoltage = ina219.getBusVoltage_V();
-  float current_mA = ina219.getCurrent_mA();
-  float power_mW = ina219.getPower_mW();
-
-  Serial.print("Bus Voltage: ");
-  Serial.print(busVoltage);
-  Serial.println(" V");
-  Serial.print("Current: ");
-  Serial.print(current_mA);
-  Serial.println(" mA");
-  Serial.print("Power: ");
-  Serial.print(power_mW);
-  Serial.println(" mW");
-  Serial.println("----------------------");
+  busVoltage = ina219.getBusVoltage_V();
+  current_mA = ina219.getCurrent_mA();
+  power_mW = ina219.getPower_mW();
 }
 
 /**
@@ -453,6 +463,51 @@ void readINA219()
  */
 void readINA219BT(void *arg)
 {
+  readINA219(); // Update Variables
+  totalElapsedRunTime += 0.5; // Update run time
+
+  /*
+  IDLE -> DRIVE -> CHARGE -> DRIVE -> IDLE
+  */
+  if ((currentState != IDLE) && (onceDuringRun == true)) // When the car starts driving, record the initial battery parameters
+  {
+    initialBatteryVoltage = busVoltage;
+    initialBatteryCurrent = current_mA;
+    initialBatteryPower = power_mW;
+
+    onceDuringRun = false;
+    totalElapsedRunTime = 0.0;
+  }
+  else if (currentState == DRIVE) // Once we start driving from a stop
+  {
+    // Save current Bat Voltage and stuff
+    driveBatteryVoltage = busVoltage;
+    driveBatteryCurrent = current_mA;
+    driveBatteryPower = power_mW;
+  }
+  else if (currentState == CHARGE) 
+  {
+    batteryChargeVoltage = busVoltage;
+    batteryChargeCurrent = current_mA;
+    batteryChargePower = power_mW;
+
+    FinalBatteryChargeVoltage = batteryChargeVoltage - driveBatteryVoltage;  
+    FinalBatteryChargeCurrent = batteryChargeCurrent - driveBatteryCurrent;
+    FinalBatteryChargePower = batteryChargePower - driveBatteryPower;  
+  }
+  else if (currentState == IDLE) // At the end of the run, find total charge used
+  {
+    totalBatteryVoltageUsed = initialBatteryVoltage - driveBatteryVoltage;
+    totalBatteryCurrentUsed = initialBatteryCurrent - driveBatteryCurrent;
+    totalBatteryPowerUsed = initialBatteryPower - driveBatteryPower;
+
+    totalEnergyUsed = totalBatteryPowerUsed * totalElapsedRunTime;
+    totalEnergyGained = FinalBatteryChargePower * totalElapsedRunTime;
+
+    onceDuringRun == true; // Prepare the car to run again
+  }
+
+
   // float busVoltage = ina219.getBusVoltage_V();
   // float current_mA = ina219.getCurrent_mA();
   // float power_mW = ina219.getPower_mW();
