@@ -125,9 +125,7 @@ Used to maintain stable autonomous driving performance.
 
 ---
 
-## Bluetooth Serial Communication
-
-# 📶 Serial Protocols and Bluetooth Communication 📶
+## 📶 Bluetooth Serial Communication 📶
 
 This section explains the basics of serial communication protocols and how Bluetooth, particularly with ESP32, implements a wireless serial interface.
 
