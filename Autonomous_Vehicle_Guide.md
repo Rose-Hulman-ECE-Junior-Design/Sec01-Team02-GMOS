@@ -24,7 +24,7 @@ Redesign the autonomous vehicle to *make ECE concepts visible and engaging*. Stu
 
 ---
 
-## ⚡ Core Electrical Concepts
+## Core Electrical Concepts
 
 | Concept   | Description |
 |-----------|-------------|
@@ -38,7 +38,7 @@ These are observed and logged live during races!
 
 ---
 
-## 💾 Core Computer Engineering Concepts
+## Core Computer Engineering Concepts
 
 | Concept          | Description |
 |------------------|-------------|
@@ -61,7 +61,7 @@ These are observed and logged live during races!
 
 ---
 
-## 🔗 Series vs. Parallel Circuits
+## Series vs. Parallel Circuits
 
 ### In Series
 
@@ -85,7 +85,7 @@ R_{\text{total}} = R_1 + R_2 + R_3 + \dots
 
 ---
 
-## ⚡ EDLC Supercapacitors
+## EDLC Supercapacitors
 
 **EDLC (Electric Double-Layer Capacitors)** are used instead of traditional batteries.
 
