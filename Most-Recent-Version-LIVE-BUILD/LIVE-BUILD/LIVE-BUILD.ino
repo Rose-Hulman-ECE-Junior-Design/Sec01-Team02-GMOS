@@ -105,8 +105,8 @@ float driveBatteryVoltage = 0.0;
 float driveBatteryCurrent = 0.0;
 float driveBatteryPower = 0.0;
 float totalBatteryVoltageUsed = 0.0;
-float totalBatteryVoltageUsed = 0.0;
-float totalBatteryVoltageUsed = 0.0;
+float totalBatteryCurrentUsed = 0.0;
+float totalBatteryPowerUsed = 0.0;
 float totalEnergyUsed = 0.0;
 float batteryChargeVoltage = 0.0;
 float batteryChargeCurrent = 0.0;
@@ -116,10 +116,12 @@ float FinalBatteryChargeCurrent = 0.0;
 float FinalBatteryChargePower = 0.0;
 float totalEnergyGained = 0.0;
 
-
 float totalElapsedRunTime = 0.0;
 bool onceDuringRun = true;
 State previousState = IDLE;
+
+int recordedValuesIndex = 0;
+float voltageArray[720]; // Car should run for 180 seconds (90sec run + 45sec charge + 45sec run). We sample every 0.5sec, so 180 * 2 = 360. Multiply it by 2 to be safe to have enough room.
 
 // Defining our Functions prior to setup()
 // void setSteeringAngle(int angle);
@@ -259,8 +261,6 @@ void UIimplementation(char command)
   SerialBT.println(" ");
   SerialBT.println("Type [EC X] to change the Error Constant, where X is a non negative number. DEFAULT: 0.59");
   SerialBT.println(" ");
-  SerialBT.println("Type [Data] to collect the data from the run"); // TODO: Data collection
-  SerialBT.println(" ");
   SerialBT.println("Parameters: ");
   SerialBT.println("Current State: ");
   SerialBT.print(stateName(currentState));
@@ -270,6 +270,9 @@ void UIimplementation(char command)
   SerialBT.println(motorSpeed);
   SerialBT.print("Error Constant: ");
   SerialBT.println(errorConstant);
+  SerialBT.println(" ");
+  SerialBT.println("Type [Data] to collect the data from the run"); // TODO: Data collection. Implement clear data command
+  SerialBT.println(" ");
   SerialBT.println("-------------------------------");
 }
 
@@ -291,8 +294,8 @@ const char *stateName(State s)
 void inputFromUser(char command)
 {
 
-  if (command == 0x0D)
-  {                                 // ENTER is pressed
+  if (command == 0x0D) // ENTER is pressed
+  {                                 
     inputBuffer[inputIndex] = '\0'; // put Null-Term at end of buffer
 
     // Turn the entire buffer to lowercase: We do this (instead of turnning each individual letter to lower case) because we use a pointer for processCommand(). As tolower() returns the
@@ -420,6 +423,11 @@ void processCommand(char *command)
       SerialBT.print("Cannot do a negative Error Constant");
     }
   }
+  else if ((strncmp(command, "data", 4) == 0))
+  {
+    for (int i = 0; i < sizeof(voltageArray); i++) SerialBT.print (voltageArray[i]);
+    SerialBT.println("We made it to data");
+  }
 }
 
 /**
@@ -464,7 +472,6 @@ void readINA219()
 void readINA219BT(void *arg)
 {
   readINA219(); // Update Variables
-  totalElapsedRunTime += 0.5; // Update run time
 
   /*
   IDLE -> DRIVE -> CHARGE -> DRIVE -> IDLE
@@ -475,8 +482,10 @@ void readINA219BT(void *arg)
     initialBatteryCurrent = current_mA;
     initialBatteryPower = power_mW;
 
+    // Set everything to 0 and start recording values
     onceDuringRun = false;
     totalElapsedRunTime = 0.0;
+    recordedValuesIndex = 0;
   }
   else if (currentState == DRIVE) // Once we start driving from a stop
   {
@@ -484,6 +493,8 @@ void readINA219BT(void *arg)
     driveBatteryVoltage = busVoltage;
     driveBatteryCurrent = current_mA;
     driveBatteryPower = power_mW;
+
+    voltageArray[recordedValuesIndex] = driveBatteryVoltage;
   }
   else if (currentState == CHARGE) 
   {
@@ -494,6 +505,8 @@ void readINA219BT(void *arg)
     FinalBatteryChargeVoltage = batteryChargeVoltage - driveBatteryVoltage;  
     FinalBatteryChargeCurrent = batteryChargeCurrent - driveBatteryCurrent;
     FinalBatteryChargePower = batteryChargePower - driveBatteryPower;  
+    
+    voltageArray[recordedValuesIndex] = driveBatteryVoltage;
   }
   else if (currentState == IDLE) // At the end of the run, find total charge used
   {
@@ -506,6 +519,9 @@ void readINA219BT(void *arg)
 
     onceDuringRun == true; // Prepare the car to run again
   }
+
+  totalElapsedRunTime += 0.5; // Update run time
+  recordedValuesIndex += 1; // Increment Index
 
 
   // float busVoltage = ina219.getBusVoltage_V();
