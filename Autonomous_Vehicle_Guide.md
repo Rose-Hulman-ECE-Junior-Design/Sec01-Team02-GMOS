@@ -30,7 +30,7 @@ Redesign the autonomous vehicle to *make ECE concepts visible and engaging*. Stu
 | **Current (I)** | Flow of electric charge |
 | **Resistance (Ω)** | Opposition to current |
 | **Power (P)** | Energy per unit time: `P = V × I` |
-| **Energy (J)** | Total work: `E = P × t` |
+| **Energy (J)** | Total work: `E = 1/2 × C × V^2` |
 
 These are observed and logged live during races!
 
