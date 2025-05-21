@@ -19,8 +19,6 @@ Redesign the autonomous vehicle to *make ECE concepts visible and engaging*. Stu
 - [EDLC Supercapacitors](#edlc-supercapacitors)
 - [PID Control](#pid-control)
 - [Bluetooth Serial Communication](#bluetooth-serial-communication)
-- [Example Calculations](#example-calculations)
-- [License](#license)
 
 ---
 
@@ -32,7 +30,7 @@ Redesign the autonomous vehicle to *make ECE concepts visible and engaging*. Stu
 | **Current (I)** | Flow of electric charge |
 | **Resistance (Ω)** | Opposition to current |
 | **Power (P)** | Energy per unit time: `P = V × I` |
-| **Energy (J)** | Total work: `E = P × t` |
+| **Energy (J)** | Total work: `E = 1/2 × C × V^2` |
 
 These are observed and logged live during races!
 
@@ -125,8 +123,34 @@ Used to maintain stable autonomous driving performance.
 - `Ki` – Integral (accumulates past error)
 - `Kd` – Derivative (predicts future error)
 
-### Example Formula:
+---
 
-```c
-error = desired_position - actual_position;
-correction = Kp*error + Ki*integral + Kd*derivative;
+## 📶 Bluetooth Serial Communication 📶
+
+This section explains the basics of serial communication protocols and how Bluetooth, particularly with ESP32, implements a wireless serial interface.
+
+---
+
+### What Is a Serial Protocol?
+
+A **serial protocol** is a method of transmitting data **one bit at a time** over a single communication line. It’s the simplest and most common form of digital communication used in embedded systems.
+
+#### Key Characteristics
+
+- **Sequential data transmission** (bit-by-bit)
+- Simple wiring: often just two lines (TX and RX)
+- Widely used for communication between microcontrollers and peripheral devices
+
+#### How It Works:
+
+- Bluetooth modules like the **ESP32** simulate a virtual serial port.
+- Devices communicate wirelessly as if they were connected by a physical UART.
+- You can use tools like **PuTTY**, **Arduino Serial Monitor**, or mobile apps to send/receive data.
+
+#### Bluetooth on ESP32:
+
+- Uses **Bluetooth SPP** to emulate serial ports.
+- Configured with a defined baud rate in software.
+- Sends sensor readings, logs, control commands wirelessly.
+- Allows live debugging and real-time parameter updates.
+
