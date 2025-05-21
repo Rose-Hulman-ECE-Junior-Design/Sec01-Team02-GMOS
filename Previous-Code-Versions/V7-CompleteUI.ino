@@ -11,7 +11,6 @@
 - Include all the libraries used in the libary folder for easy download
 - Instructions on how to connect/reconnect to robot
 - Make code more modular. Group variables in header area
-- Unknown Bugs (Car randomly just starts turning left until reset)
 */
 
 
@@ -21,21 +20,6 @@
 #include <HUSKYLENS.h>       // Camera
 #include <BluetoothSerial.h> // BT communication
 #include <esp_timer.h>       // ESP32 timer
-#include <PID_v1.h>          // PID controller
-
-// PID controller
-// PID tuning parameters
-double Kp = 0.62;    // proportional gain 
-double Ki = 0.00;    // integral gain     
-double Kd = 0.1;    // derivative gain   
-
-
-double error,    // the error from the camera
-       pidOutput,   // the correction to send to the steering servo
-       pidSetpoint; // the ideal error (0)
-
-// create the PID object
-PID linePid(&error, &pidOutput, &pidSetpoint, Kp, Ki, Kd, DIRECT);
 
 // INA219 instance:
 Adafruit_INA219 ina219;
@@ -76,6 +60,8 @@ int motorSpeed = IDLE_SPEED;  // start centered
 
 // Control variables
 int setpoint = 160; // Diplay centerline position
+int error = 0;      // Feedback variable
+int kp = 0.6;       // Experimental value for proportional controller
 
 //***************************** Begin Bluetooth Config
 // Device Name (For Bluetooth):
@@ -114,6 +100,8 @@ bool resetUI = false; // used in deciding if we need to resend the UI interface
 char inputBuffer[200]; // Buffer to hold the input
 int inputIndex = 0;
 
+float errorConstant = 0.59;
+
 float busVoltage = 0.0;
 float current_mA = 0.0;
 float power_mW = 0.0;
@@ -141,8 +129,7 @@ bool onceDuringRun = true;
 State previousState = IDLE;
 
 int recordedValuesIndex = 0;
-int arraySize = 720; // Car should run for 180 seconds (90sec run + 45sec charge + 45sec run). We sample every 0.5sec, so 180 * 2 = 360. Multiply it by 2 to be safe to have enough room.
-float voltageArray[720]; 
+float voltageArray[720]; // Car should run for 180 seconds (90sec run + 45sec charge + 45sec run). We sample every 0.5sec, so 180 * 2 = 360. Multiply it by 2 to be safe to have enough room.
 float currentArray[720];
 bool running = false;
 
@@ -227,13 +214,9 @@ void followLine()
 {
   huskylens.request(ID1);
   HUSKYLENSResult result = huskylens.read();
+  int error = (int32_t)result.xTarget - setpoint;
 
-  error = (int32_t)result.xTarget - setpoint;
-  linePid.SetTunings(Kp, Ki, Kd); // update the kp ki and kd values in the controller
-  linePid.Compute(); // calculate the output
-  setSteeringAngle(STRAIGHT + (int)pidOutput);
-
-  if (abs(error) > 40) // Slow down on curves
+  if (abs(error) > 40)
   {
     setMotorSpeed(motorSpeed);
   }
@@ -241,6 +224,9 @@ void followLine()
   {
     setMotorSpeed(motorSpeed + 20);
   }
+  setSteeringAngle(STRAIGHT - errorConstant * error); // The factor of 0.59 was found via experimentation.
+                                                      // It allows for the steering servo to turn tight enough on the corners while
+                                                      // not oscillating to much on the straights
 }
 
 /**
@@ -282,31 +268,19 @@ void UIimplementation(char command)
   SerialBT.println(" ");
   SerialBT.println("Type [Speed X] to change Speed, where X is an integer between 45 -> 120. DEFAULT: 70");
   SerialBT.println(" ");
-  SerialBT.println("Type [Kp X] to change the proportional constant, where X is a non negative number. DEFAULT: 0.62");
-  SerialBT.println(" ");
-  SerialBT.println("Type [Ki X] to change the integral constant, where X is a non negative number. DEFAULT: 0");
-  SerialBT.println(" ");
-  SerialBT.println("Type [Kd X] to change the derivative constant, where X is a non negative number. DEFAULT: 0.1");
+  SerialBT.println("Type [EC X] to change the Error Constant, where X is a non negative number. DEFAULT: 0.59");
   SerialBT.println(" ");
   SerialBT.println("Parameters: ");
   SerialBT.print("Current State: ");
   SerialBT.println(stateName(currentState));
   SerialBT.print("Speed: ");
   SerialBT.println(motorSpeed);
-  SerialBT.print("Kp: ");
-  SerialBT.println(Kp, 6); // print to 6 decimal places
-  SerialBT.print("Ki: ");
-  SerialBT.println(Ki, 6);
-  SerialBT.print("Kd: ");
-  SerialBT.println(Kd, 6);
+  SerialBT.print("Error Constant: ");
+  SerialBT.println(errorConstant);
   SerialBT.println(" ");
   SerialBT.println("Type [Data] to collect the data from the run"); // TODO: Data collection. Implement clear data command
   SerialBT.println("Type [Clear Data] to clear the data from the previous run (does not need to be done if vehicle is reset)");
   SerialBT.println(" ");
-  SerialBT.println("ERROR:");
-  SerialBT.println(error,6);
-  SerialBT.println("PIDoutput");
-  SerialBT.println(pidOutput);
   SerialBT.println("-------------------------------");
 }
 
@@ -444,43 +418,17 @@ void processCommand(char *command)
       SerialBT.print("Please Pick a speed between 45 & 120");
     }
   }
-  else if ((strncmp(command, "kp ", 3) == 0))
+  else if ((strncmp(command, "ec ", 3) == 0))
   {
-    float newValue = atof(command + 3);
+    float newEC = atof(command + 3);
 
-    if (newValue >= 0)
+    if (newEC >= 0)
     {
-      Kp = newValue;
+      errorConstant = newEC;
     }
     else
     {
-      SerialBT.print("Cannot do a negative Kp");
-    }
-  }
-  else if ((strncmp(command, "ki ", 3) == 0))
-  {
-    float newValue = atof(command + 3);
-
-    if (newValue >= 0)
-    {
-      Ki = newValue;
-    }
-    else
-    {
-      SerialBT.print("Cannot do a negative Ki");
-    }
-  }
-    else if ((strncmp(command, "kd ", 3) == 0))
-  {
-    float newValue = atof(command + 3);
-
-    if (newValue >= 0)
-    {
-      Kd = newValue;
-    }
-    else
-    {
-      SerialBT.print("Cannot do a negative Kd");
+      SerialBT.print("Cannot do a negative Error Constant");
     }
   }
   else if ((strncmp(command, "data", 4) == 0))
@@ -513,7 +461,7 @@ void processCommand(char *command)
  */
 void setSteeringAngle(int angle)
 {
-  angle = constrain(angle, -25, 195); // Dont let the servo burn itself out by turning to far
+  angle = constrain(angle, 0, 205);
   float rangeMs = maxPulseWidth - minPulseWidth;
   float pulseWidthMs = minPulseWidth + ((float)angle / 180.0) * rangeMs;
   int dutyCycle = (int)(pwmMax * (pulseWidthMs / periodMs));
@@ -572,15 +520,8 @@ void readINA219BT(void *arg)
     driveBatteryCurrent = current_mA;
     driveBatteryPower = power_mW;
 
-    if (recordedValuesIndex < arraySize) 
-    {
-      voltageArray[recordedValuesIndex] = driveBatteryVoltage;
-      currentArray[recordedValuesIndex] = driveBatteryCurrent;
-    }
-    else
-    {
-      SerialBT.println("No space left in storage, please reset data");
-    }
+    voltageArray[recordedValuesIndex] = driveBatteryVoltage;
+    currentArray[recordedValuesIndex] = driveBatteryCurrent;
   }
   else if (currentState == CHARGE) 
   {
@@ -592,15 +533,8 @@ void readINA219BT(void *arg)
     FinalBatteryChargeCurrent = batteryChargeCurrent - driveBatteryCurrent;
     FinalBatteryChargePower = batteryChargePower - driveBatteryPower;  
     
-    if (recordedValuesIndex < arraySize) 
-    {
     voltageArray[recordedValuesIndex] = batteryChargeVoltage;
     currentArray[recordedValuesIndex] = batteryChargeCurrent;
-    }
-    else
-    {
-      SerialBT.println("No space left in storage, please reset data");
-    }
   }
   else if (currentState == IDLE) // At the end of the run, find total charge used
   {
@@ -690,12 +624,6 @@ void setup()
 
   // Timer setup for logging every 0.5s (500,000 microseconds)
   timerLog(500000);
-
-  // For PID controller
-  pidSetpoint = 0;  // we want the error to be zero
-  linePid.SetMode(AUTOMATIC); // turn the PID on
-  linePid.SetSampleTime(5); // choose how often to sample (in milliseconds)
-  linePid.SetOutputLimits(-90,90); // arbitrary values. This allows the Pid controller to go negative rather than clamping to 0 -> 255
 }
 
 void loop()
