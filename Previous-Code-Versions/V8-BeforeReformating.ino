@@ -12,12 +12,10 @@
 - Instructions on how to connect/reconnect to robot. How to start a new run if the robot disconnects
 - Make code more modular. Group variables in header area
 - Unknown Bugs (Car randomly just starts turning left until reset)
-- Explain PID controller
 */
 
-//================================================================================
-// Libraries
-//================================================================================
+
+// Library imports:
 #include <Wire.h>            // I2C
 #include <Adafruit_INA219.h> // DMM sensor
 #include <HUSKYLENS.h>       // Camera
@@ -25,144 +23,142 @@
 #include <esp_timer.h>       // ESP32 timer
 #include <PID_v1.h>          // PID controller
 
-//================================================================================
-// Constants & Pin Definitions
-//================================================================================
-const int pwmFrequency    = 50;
-const int pwmResolution   = 12;
-const int pwmMax          = 4095;
-
-const float minPulseWidth = 1.0;   // 1ms pulse width for 0 degrees
-const float maxPulseWidth = 2.0;   // 2ms pulse width for 180 degrees
-const float periodMs      = 20.0;
-
-const int baudRate        = 115200;
-
-const int STRAIGHT        = 90;
-const int IDLE_SPEED      = 0;
-const int MIN_SPEED       = 45;
-
-const int steeringPin     = 32;
-const int speedMotorPin   = 33;
-
-//================================================================================
-// State Machine
-//================================================================================
-enum State { IDLE, DRIVE, CHARGE };
-State currentState  = IDLE;
-State previousState = IDLE;
-
-//================================================================================
-// Control & PID Variables
-//================================================================================
-int steeringAngle = STRAIGHT; // start centered
-int motorSpeed    = IDLE_SPEED;
-
-int setpoint = 160; // display centerline position
-
+// PID controller
+// PID tuning parameters
 double Kp = 0.65;    // proportional gain 
 double Ki = 0.00;    // integral gain     
-double Kd = 0.1;     // derivative gain  
+double Kd = 0.1;    // derivative gain   
 
-double error;       // the error from the camera
-double pidOutput;   // the correction to send to the steering servo
-double pidSetpoint; // the ideal error (0)
 
+double error,    // the error from the camera
+       pidOutput,   // the correction to send to the steering servo
+       pidSetpoint; // the ideal error (0)
+
+// create the PID object
 PID linePid(&error, &pidOutput, &pidSetpoint, Kp, Ki, Kd, DIRECT);
 
-//================================================================================
-// Bluetooth Configuration
-//================================================================================
-String deviceName = "Blue!!!";
-BluetoothSerial SerialBT;
-bool isPaired  = false;
-bool wasPaired = false;
-
-//================================================================================
-// INA219 Sensor Variables
-//================================================================================
+// INA219 instance:
 Adafruit_INA219 ina219;
-float busVoltage = 0.0;
-float current_mA = 0.0;
-float power_mW   = 0.0;
 
-//================================================================================
-// Battery & Energy Tracking
-//================================================================================
-float initialBatteryVoltage      = 0.0;
-float driveBatteryVoltage        = 0.0;
-float totalBatteryVoltageUsed    = 0.0;
-float initialBatteryCurrent      = 0.0;
-float driveBatteryCurrent        = 0.0;
-float totalBatteryCurrentUsed    = 0.0;
-float initialBatteryPower        = 0.0;
-float driveBatteryPower          = 0.0;
-float totalBatteryPowerUsed      = 0.0;
-float totalEnergyUsed            = 0.0;
-float batteryChargeVoltage       = 0.0;
-float batteryChargeCurrent       = 0.0;
-float batteryChargePower         = 0.0;
-float FinalBatteryChargeVoltage  = 0.0;
-float FinalBatteryChargeCurrent  = 0.0;
-float FinalBatteryChargePower    = 0.0;
-float totalEnergyGained          = 0.0;
-
-float totalElapsedRunTime        = 0.0;
-bool onceDuringRun               = true;
-
-//================================================================================
-// Data Recording Arrays
-//================================================================================
-int recordedValuesIndex = 0;
-const int arraySize     = 720;
-float voltageArray[arraySize];
-float currentArray[arraySize];
-bool running = false;
-char inputBuffer[200];
-int inputIndex = 0;
-String angleBuffer = "";
-
-//================================================================================
-// Miscellaneous Limits
-//================================================================================
-double maxPCBVoltage = 10.4;
-double minPCBVoltage = 5.7;
-
-//================================================================================
-// Timer Instantces
-//================================================================================
-esp_timer_handle_t stateTimer;
-esp_timer_handle_t INA219BT_timer;
-
-//================================================================================
-// HUSKEYLENS Instantces
-//================================================================================
+// HUSKYLENS instance:
 HUSKYLENS huskylens;
 int ID1 = 1; // Required parameter to pull data from camera
 
-//================================================================================
-// Function Prototypes
-//================================================================================
-void setSteeringAngle(int angle);
-void setMotorSpeed(int speed);
+// FSM parameters:
+enum State
+{
+  IDLE,
+  DRIVE,
+  CHARGE
+};
+State currentState = IDLE;
 
-void timerLog(int time);
-void printState(void* arg);
+// Constants:
+const int steeringPin = 32;
+const int speedMotorPin = 33;
+const int pwmFrequency = 50;
+const int pwmResolution = 12;
+const int pwmMax = 4095;
 
-void handleSerialCommunication();
-void UIimplementation(char command);
-const char* stateName(State s);
-void bluetoothPairedCheck();
+const float minPulseWidth = 1.0; // 1ms pulse width for 0 degrees
+const float maxPulseWidth = 2.0; // 2ms pulse width for 180 degrees
+const float periodMs = 20.0;
 
-void serialChangeServoAngle(const char* command);
-void followLine();
+const int baudRate = 115200;
 
-void readINA219();
-void readINA219BT(void* arg);
+const int STRAIGHT = 90;
+const int IDLE_SPEED = 0;
+const int MIN_SPEED = 45;
 
-//================================================================================
-// setup()
-//================================================================================
+// Default values:
+int steeringAngle = STRAIGHT; // start centered
+int motorSpeed = IDLE_SPEED;  // start centered
+
+// Control variables
+int setpoint = 160; // Diplay centerline position
+
+//***************************** Begin Bluetooth Config
+// Device Name (For Bluetooth):
+String deviceName = "Blue!!!";
+BluetoothSerial SerialBT; // renaming BluetoothSerial to SerialBT for so it reads better
+
+// Check if Bluetooth is available
+#if !defined(CONFIG_BT_ENABLED) || !defined(CONFIG_BLUEDROID_ENABLED)
+#error Bluetooth is not enabled! Please run `make menuconfig` to and enable it
+#endif
+
+// Check Serial Port Profile
+#if !defined(CONFIG_BT_SPP_ENABLED)
+#error Serial Port Profile for Bluetooth is not available or not enabled. It is only available for the ESP32 chip.
+#endif
+
+// Misc debugging values for BT. Not important for functionality
+int testingNumber = 0;
+char str[50];
+
+bool isPaired = false;
+bool wasPaired = false;
+//***************************** End Bluetooth Config
+
+// Timer handle
+esp_timer_handle_t stateTimer;
+esp_timer_handle_t INA219BT_timer;
+
+// For Servo Turn Radius Debugging
+String angleBuffer = "";
+
+
+
+bool resetUI = false; // used in deciding if we need to resend the UI interface
+
+char inputBuffer[200]; // Buffer to hold the input
+int inputIndex = 0;
+
+float busVoltage = 0.0;
+float current_mA = 0.0;
+float power_mW = 0.0;
+
+float initialBatteryVoltage = 0.0;
+float initialBatteryCurrent = 0.0;
+float initialBatteryPower = 0.0;
+float driveBatteryVoltage = 0.0;
+float driveBatteryCurrent = 0.0;
+float driveBatteryPower = 0.0;
+float totalBatteryVoltageUsed = 0.0;
+float totalBatteryCurrentUsed = 0.0;
+float totalBatteryPowerUsed = 0.0;
+float totalEnergyUsed = 0.0;
+float batteryChargeVoltage = 0.0;
+float batteryChargeCurrent = 0.0;
+float batteryChargePower = 0.0;
+float FinalBatteryChargeVoltage = 0.0;
+float FinalBatteryChargeCurrent = 0.0;
+float FinalBatteryChargePower = 0.0;
+float totalEnergyGained = 0.0;
+
+float totalElapsedRunTime = 0.0;
+bool onceDuringRun = true;
+State previousState = IDLE;
+
+int recordedValuesIndex = 0;
+int arraySize = 720; // Car should run for 180 seconds (90sec run + 45sec charge + 45sec run). We sample every 0.5sec, so 180 * 2 = 360. Multiply it by 2 to be safe to have enough room.
+float voltageArray[720]; 
+float currentArray[720];
+bool running = false;
+
+double maxPCBVoltage = 10.4;
+double minPCBVoltage = 5.7;
+
+// Defining our Functions prior to setup()
+// void setSteeringAngle(int angle);
+// void setMotorSpeed(int speed);
+// void printState(void* arg);
+// void readINA219BT(void* arg);
+// void loadTimer(int time);
+// void timerLog(int time);
+
+//******************************************** Begining of Function-Definitions
+
 /**
  * @brief Initializes and starts a periodic timer to execute a callback function.
  *
@@ -506,11 +502,18 @@ void processCommand(char *command)
   }
   else if ((strncmp(command, "data", 4) == 0))
   {
-    SerialBT.println("Voltage,Current");       // optional header row
-      for (int i = 0; i < recordedValuesIndex; i++) {
-        SerialBT.print(voltageArray[i], 6);     // 6 decimal places
-        SerialBT.print(',');
-        SerialBT.println(currentArray[i], 6);
+    SerialBT.print("Voltage: ");
+    for (int i = 0; i < recordedValuesIndex; i++) 
+    {
+      SerialBT.print (voltageArray[i]); 
+      if (i == recordedValuesIndex - 1) SerialBT.print(", ");
+    }
+    SerialBT.println(" ");
+    SerialBT.print("Current: ");
+    for (int i = 0; i < recordedValuesIndex; i++) 
+    {
+      SerialBT.print (currentArray[i]); 
+      if (i == recordedValuesIndex - 1) SerialBT.print(", ");
     }
   }
   else if ((strncmp(command, "clear data", 10) == 0))
