@@ -57,8 +57,19 @@ Ohmigos is an Arduino-based autonomous robot with Bluetooth-controlled modes for
    - <ins>Data & Clear Data:</ins>  
    These commands are used to display the collected data (or to dispose of the data for a new run). When DATA is typed, a two collum table will display with the collected voltage and current values from the run.  
    *More information on Data collection:* The car will begin to log the bus voltage from the first transition into DRIVE (from IDLE), through the CHARGE phase, until the car is set back to idle. The data is stored as two separate arrays: one for voltage over time, another for the state over time. The indices are equivalent to 0.5s time steps, and thus can be useful for plotting the change in energy over a competition run.
-   - Appearance: ![alt text](https://github.com/Rose-Hulman-ECE-Junior-Design/Sec01-Team02-GMOS/blob/main/Images/PresentUI.png "Our actual UI will appear here once completed")
- 4. **Reconnecting After a Disconnection** :
+   - Appearance: ![alt text](https://github.com/Rose-Hulman-ECE-Junior-Design/Sec01-Team02-GMOS/blob/main/Images/PresentUI.png "Our UI Implmentation")
+4. **To Plot the data:**
+   - With TeraTerm open, go to file->log
+   - Type 'data'
+   - Go back to file->log
+   - Open the generated log file and remove all the text that is not the 'Voltage" & 'Current' table
+   - Save the cleaned data as a .txt or .csv file
+      - Import the data into Excel
+          - 
+      - Import the data into Google Sheets
+          - 
+
+5. **Reconnecting After a Disconnection** :
    - Power cycle the ESP32
    - Disconnect from TeraTerm (File->Disconnect)
    - Create a new connection to the same COM port (File-New Connection)
