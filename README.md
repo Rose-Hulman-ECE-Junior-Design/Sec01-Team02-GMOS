@@ -1,9 +1,14 @@
 # Ohmigos Arduino ReadMe
 
-## Milestone 1
+### Overview
+Ohmigos is an Arduino-based autonomous robot with Bluetooth-controlled modes for driving, charging, and idling. It features real-time power monitoring via the INA219 sensor, uses a PID-based line-following algorithm, and is built around a state machine for robust task management.
 
-### Code Files for Milestone
-**M1-Basic-Software-Functionality.ino**
+### Directory Structure
+- **Images:** Location of the images used in this ReadMe.
+- **Libraries:** Location of all the extra libraries used throughout the project.
+- **Most-Recent-Version-LIVE-BUILD:** Location of the most up to date version of the software.
+- **Previous-Code-Versions:** Location of all the previous versions of our code that led up to the LIVE code. Useful for seeing progess or rolling back software.
+- **Autonomous_Vehicle_Guide:** A guide to provide a high-level overview about ***how*** the project works.
 
 ### Features
 - **Autonomous Driving**: Implements self-driving via image processing of a reference target path and a simple control algorithm
@@ -52,9 +57,12 @@
    - <ins>Data & Clear Data:</ins>  
    These commands are used to display the collected data (or to dispose of the data for a new run). When DATA is typed, a two collum table will display with the collected voltage and current values from the run.  
    *More information on Data collection:* The car will begin to log the bus voltage from the first transition into DRIVE (from IDLE), through the CHARGE phase, until the car is set back to idle. The data is stored as two separate arrays: one for voltage over time, another for the state over time. The indices are equivalent to 0.5s time steps, and thus can be useful for plotting the change in energy over a competition run.
-   - Appearence: ![alt text](https://github.com/Rose-Hulman-ECE-Junior-Design/Sec01-Team02-GMOS/blob/main/Images/PresentUI.png "Our actual UI will appear here once completed")
-
----
+   - Appearance: ![alt text](https://github.com/Rose-Hulman-ECE-Junior-Design/Sec01-Team02-GMOS/blob/main/Images/PresentUI.png "Our actual UI will appear here once completed")
+ 4. **Reconnecting After a Disconnection** :
+   - Power cycle the ESP32
+   - Disconnect from TeraTerm (File->Disconnect)
+   - Create a new connection to the same COM port (File-New Connection)
+   - Press a key to refresh the UI
 <!-- 
 ## Documentation Plan (not offical documentation yet)
 
