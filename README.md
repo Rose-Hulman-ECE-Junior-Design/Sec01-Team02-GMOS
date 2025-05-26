@@ -27,18 +27,35 @@
    - Pair the ESP32 with your laptop. Turn on bluetooth, then turn on the vehicle and find a device name `Blue!!!` and connect to it.
    - Open device manager on your laptop, go to "Ports" and find the "Standard Serial over Bluetooth link (COMX)." There should be two COM ports a distance of 1 away from eachother (e.g COMX & COM(X+1))
    - Open a serial terminal or Bluetooth terminal application, such as TeraTerm, and create a connection to the larger of the two COM ports (COM(X+1)) that were shown in device manager.
-   - Press a key on the laptops keyboard. The UI will appear.
+   - Press a key on the laptops keyboard. The UI will appear.  
    *NOTE:* If nothing appears, try connecting to the smaller COMX port instead.
 
 3. **Commandline User Interface**:
-   - Use TeraTerm serial terminal to interact with the ESP32.
-   *NOTE:* A key must be pressed for the UI to appear once connected
-   - 
-   - The car also is will begin to log the bus voltage from the first transition into DRIVE (from IDLE), through the CHARGE phase, until the car is set back to idle. The data is stored as two separate arrays: one for voltage over time, another for the state over time. The indices are equivalent to 0.5s time steps, and thus can be useful for plotting the change in energy over a competition run. To print out the last run's data, simply enter "get raw data", and both arrays will be printed to the terminal. To only get the energy expended/gained over a heat, enter: "get energy".
+   - Use TeraTerm serial terminal to interact with the ESP32.  
+   *NOTE:* A key must be pressed for the UI to appear once connected. Once the full UI is
+   displayed, it is recommended to resize the terminal so that only one instant of the UI
+   is shown at a time.
+   - <ins>Input From User:</ins>  
+   This is where you will see your input to the device. It acts as an array of `char` until 
+   ENTER is pressed.
+   - <ins>Commands (not case sensitive):</ins>  
+   This is where you will the avaliable control of the vehicle. The text within [] is the 
+   sequence of `char` that need to be typed for the vehicle to recongize the command. The 
+   instructions to use each command are listed in the UI.  
+   *NOTE:* While the example commands are capitilized, the typed commands do not need to be, as the commands are not case sensitive.
+   - <ins>Parameters:</ins>  
+   This is where all the variable parameters for the vehicle are displayed.  
+   *NOTE:* The list only updates once a key is pressed.  
+   *NOTE:* The SPEED parameter will be set to 60 as long as the batter voltage is above a
+   certain level. This is to prevent the vehicle from going to fast with a fresh battery.
+   The speed may be increased at user discretion after enough energy was sufficiently used.
+   - <ins>Data & Clear Data:</ins>  
+   These commands are used to display the collected data (or to dispose of the data for a new run). When DATA is typed, a two collum table will display with the collected voltage and current values from the run.  
+   *More information on Data collection:* The car will begin to log the bus voltage from the first transition into DRIVE (from IDLE), through the CHARGE phase, until the car is set back to idle. The data is stored as two separate arrays: one for voltage over time, another for the state over time. The indices are equivalent to 0.5s time steps, and thus can be useful for plotting the change in energy over a competition run.
    - Appearence: ![alt text](https://github.com/Rose-Hulman-ECE-Junior-Design/Sec01-Team02-GMOS/blob/main/Images/PresentUI.png "Our actual UI will appear here once completed")
 
 ---
-
+<!-- 
 ## Documentation Plan (not offical documentation yet)
 
 ### Introduction
@@ -100,4 +117,4 @@
 - The Serial Monitor in Arduino will act as the UI
       - Will print out all necessary information (power, car state, etc) at pre-determined intervals
       - Will use the terminal to start/stop vehicle as well as update existing parameters
----
+--- -->

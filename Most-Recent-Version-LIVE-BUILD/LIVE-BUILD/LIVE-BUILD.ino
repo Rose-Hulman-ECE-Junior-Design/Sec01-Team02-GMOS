@@ -317,11 +317,11 @@ void UIimplementation(char command)
   SerialBT.print("Speed: ");
   SerialBT.println(motorSpeed);
   SerialBT.print("Kp: ");
-  SerialBT.println(Kp, 6); // print to 6 decimal places
+  SerialBT.println(Kp, 3); // print to 3 decimal places
   SerialBT.print("Ki: ");
-  SerialBT.println(Ki, 6);
+  SerialBT.println(Ki, 3);
   SerialBT.print("Kd: ");
-  SerialBT.println(Kd, 6);
+  SerialBT.println(Kd, 3);
   SerialBT.println(" ");
   SerialBT.println("Type [Data] to collect the data from the run"); // TODO: Data collection. Implement clear data command
   SerialBT.println("Type [Clear Data] to clear the data from the previous run (does not need to be done if vehicle is reset)");
