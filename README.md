@@ -64,10 +64,22 @@ Ohmigos is an Arduino-based autonomous robot with Bluetooth-controlled modes for
    - Go back to file->log
    - Open the generated log file and remove all the text that is not the 'Voltage" & 'Current' table
    - Save the cleaned data as a .txt or .csv file
-      - Import the data into Excel
-          - 
-      - Import the data into Google Sheets
-          - 
+      - How to import the data into Excel
+          - Open Excel
+          - Go to File → Open, then select “All Files” and open the cleaned .txt/.csv
+          - The Text Import Wizard will appear:
+          - Choose Delimited
+          - Select Space or Tab as the delimiter (whichever matches your output)
+          - Click Finish
+          - Your data should now appear in columns
+          - Highlight the data and use the Insert → Chart option to plot Voltage vs Current
+      - How to import the data into Google Sheets
+          - Go to Google Sheets and open a blank sheet
+          - Click File → Import → Upload, then select your .txt/.csv file
+          - Choose: Replace current sheet
+          - Separator type: Detect automatically (or manually pick Tab if needed)
+          - Click Import Data
+          - Select the columns and use Insert → Chart to create your graph
 
 5. **Reconnecting After a Disconnection** :
    - Power cycle the ESP32
