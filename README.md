@@ -24,17 +24,18 @@
    - Flash the code onto the ESP32 using the Arduino IDE, making sure that the switch for the power supply is turned OFF: the car is powered over USB for programming.
 
 2. **Bluetooth Pairing**:
-   - Pair the ESP32 with your Bluetooth device using the name `ECE362CarTeam02`.
-   - Open a serial terminal or Bluetooth terminal application to send and receive messages.
+   - Pair the ESP32 with your laptop. Turn on bluetooth, then turn on the vehicle and find a device name `Blue!!!` and connect to it.
+   - Open device manager on your laptop, go to "Ports" and find the "Standard Serial over Bluetooth link (COMX)." There should be two COM ports a distance of 1 away from eachother (e.g COMX & COM(X+1))
+   - Open a serial terminal or Bluetooth terminal application, such as TeraTerm, and create a connection to the larger of the two COM ports (COM(X+1)) that were shown in device manager.
+   - Press a key on the laptops keyboard. The UI will appear.
+   *NOTE:* If nothing appears, try connecting to the smaller COMX port instead.
 
 3. **Commandline User Interface**:
    - Use TeraTerm serial terminal to interact with the ESP32.
-   - State transitions are done by entering the corresponding character:
-      - D: DRIVE
-      - I: IDLE
-      - C: CHARGE
+   *NOTE:* A key must be pressed for the UI to appear once connected
+   - 
    - The car also is will begin to log the bus voltage from the first transition into DRIVE (from IDLE), through the CHARGE phase, until the car is set back to idle. The data is stored as two separate arrays: one for voltage over time, another for the state over time. The indices are equivalent to 0.5s time steps, and thus can be useful for plotting the change in energy over a competition run. To print out the last run's data, simply enter "get raw data", and both arrays will be printed to the terminal. To only get the energy expended/gained over a heat, enter: "get energy".
-   - Appearence: ![alt text](https://github.com/Rose-Hulman-ECE-Junior-Design/Sec01-Team02-GMOS/blob/main/Images/TestSS.png "Our actual UI will appear here once completed")
+   - Appearence: ![alt text](https://github.com/Rose-Hulman-ECE-Junior-Design/Sec01-Team02-GMOS/blob/main/Images/PresentUI.png "Our actual UI will appear here once completed")
 
 ---
 

@@ -12,7 +12,9 @@
 - Instructions on how to connect/reconnect to robot. How to start a new run if the robot disconnects
 - Make code more modular. Group variables in header area
 - Unknown Bugs (Car randomly just starts turning left until reset)
-- Explain PID controller
+- Explain PID controllerScc
+- Explain how to collect data 
+- How to use UI
 */
 
 //================================================================================
@@ -324,10 +326,6 @@ void UIimplementation(char command)
   SerialBT.println("Type [Data] to collect the data from the run"); // TODO: Data collection. Implement clear data command
   SerialBT.println("Type [Clear Data] to clear the data from the previous run (does not need to be done if vehicle is reset)");
   SerialBT.println(" ");
-  SerialBT.println("ERROR:");
-  SerialBT.println(error,6);
-  SerialBT.println("PIDoutput");
-  SerialBT.println(pidOutput);
   SerialBT.println("-------------------------------");
 }
 
