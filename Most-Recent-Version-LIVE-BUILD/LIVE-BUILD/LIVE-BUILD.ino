@@ -257,12 +257,6 @@ void adjustSpeed()
     setMotorSpeed(motorSpeed + 20);
   }
 
-  // We need to dynamically change the speed of the car based on the voltage being read from the INA219, as 
-  // if we go to fast due to a high voltage, we will run off the track, so we force the robot to go slower. minPCBVoltage/5 = 1.14
-  if (busVoltage > (maxPCBVoltage - minPCBVoltage/5))
-  {
-    motorSpeed = 60;
-  }
 
 }
 
@@ -303,7 +297,7 @@ void UIimplementation(char command)
   SerialBT.println("Type [I] to Idle");
   SerialBT.println("Type [C] to Charge");
   SerialBT.println(" ");
-  SerialBT.println("Type [Speed X] to change Speed, where X is an integer between 45 -> 120. DEFAULT: 70");
+  SerialBT.println("Type [Speed X] to change Speed, where X is an integer between 45 -> 120. DEFAULT: 55");
   SerialBT.println(" ");
   SerialBT.println("Type [Kp X] to change the proportional constant, where X is a non negative number. DEFAULT: 0.65");
   SerialBT.println(" ");
@@ -504,12 +498,16 @@ void processCommand(char *command)
   }
   else if ((strncmp(command, "data", 4) == 0))
   {
-    SerialBT.println("Voltage,Current");       // optional header row
+    SerialBT.println("Voltage, Current");       // header row
       for (int i = 0; i < recordedValuesIndex; i++) {
-        SerialBT.print(voltageArray[i], 6);     // 6 decimal places
+        SerialBT.print(voltageArray[i], 4);     // 4 decimal places
         SerialBT.print(',');
-        SerialBT.println(currentArray[i], 6);
+        SerialBT.println(currentArray[i], 4);
     }
+    SerialBT.print("Total Energy Used: ");
+    SerialBT.println(totalEnergyUsed);
+    SerialBT.println("Total Energy Gained:");
+    SerialBT.println(totalEnergyGained);
   }
   else if ((strncmp(command, "clear data", 10) == 0))
   {
@@ -695,7 +693,7 @@ void setup()
   delay(1000);               // at least 1s delay to allow driver to recognize servo attachment
   setMotorSpeed(motorSpeed); // the driver needs to first see 0-speed in order to calibrate
   delay(3000);               // this delay may need to be up to 5s (5000ms) for the driver to calibrate to 0-speed
-  motorSpeed = 70;           // set a default motor speed
+  motorSpeed = 55;           // set a default motor speed
 
   // Timer Value setup
   loadTimer(5000000); // 5 seconds in microseconds
@@ -727,7 +725,7 @@ void loop()
 
   case CHARGE:
     setMotorSpeed(IDLE_SPEED);
-    setSteeringAngle(STRAIGHT);
+    // setSteeringAngle(STRAIGHT);
     break;
   }
 }
